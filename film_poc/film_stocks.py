@@ -5,6 +5,7 @@ import json
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from .hald_loader import load_hald
+from .cache import cached_array
 
 ASSETS = Path(__file__).parent/'assets'/'film-stocks'
 STOCKS = json.loads((ASSETS/'manifest.json').read_text(encoding='utf-8'))
@@ -12,7 +13,8 @@ STOCKS = json.loads((ASSETS/'manifest.json').read_text(encoding='utf-8'))
 
 @lru_cache(maxsize=6)
 def table(stock):
-    cube=load_hald(ASSETS/STOCKS[stock]['file'])
+    cube=cached_array('film-stocks',STOCKS[stock]['sha256'],
+                      lambda: load_hald(ASSETS/STOCKS[stock]['file']),(64,64,64,3))
     if not np.isfinite(cube).all() or cube.min()<0 or cube.max()>1:
         raise ValueError('Invalid film stock LUT')
     axis=np.linspace(0,1,len(cube))

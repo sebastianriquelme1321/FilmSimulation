@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 import numpy as np
 from scipy.interpolate import RBFInterpolator, RegularGridInterpolator
+from .cache import cached_array
+import hashlib
 
 NAME = 'Classic Chrome · darktable (experimental)'
 PRESETS = {'chrome': 'Classic Chrome', 'astia': 'Astia', 'mchrome': 'Monochrome',
@@ -65,10 +67,14 @@ def direct(rgb, preset='chrome'):
 @lru_cache(maxsize=5)
 def lut(preset='chrome'):
     axis=np.linspace(0,1,49)
-    grid=np.stack(np.meshgrid(axis,axis,axis,indexing='ij'),axis=-1)
-    values=np.empty_like(grid)
-    for i in range(len(axis)):
-        values[i]=direct(grid[i],preset)
+    def build():
+        grid=np.stack(np.meshgrid(axis,axis,axis,indexing='ij'),axis=-1)
+        values=np.empty_like(grid)
+        for i in range(len(axis)):
+            values[i]=direct(grid[i],preset)
+        return values
+    token=hashlib.sha256(Path(__file__).read_bytes()+Path(__file__).with_name(f'darktable_{preset}.json').read_bytes()).hexdigest()
+    values=cached_array('darktable',token,build,(49,49,49,3))
     return RegularGridInterpolator((axis,axis,axis),values,bounds_error=True)
 
 

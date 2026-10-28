@@ -15,6 +15,7 @@ from .film_badge import add_canister
 from . import user_library
 from .theme import STYLE
 from .raw_export import export_raw_bundle
+from .preview import PreviewPipeline
 import json
 
 
@@ -56,13 +57,19 @@ class Window(QMainWindow):
         self.source = None
         self.job = None
         self.pixmaps = []
-        self.thumbs = {name: add_canister(pixmap(rgb),metadata(name)['label'])
-                       for name,rgb in reference_thumbnails().items()}
+        self.thumbs = {}
+        self.gallery_job = None
         self.busy = False
         self._selected_name = None
+        self.active_look = None
+        self.preview_pipeline = PreviewPipeline()
+        self.preview_job = None
+        self.preview_pending = None
+        self.preview_revision = 0
+        self.closing_preview = False
         self.render_timer = QTimer(self)
         self.render_timer.setSingleShot(True)
-        self.render_timer.setInterval(180)
+        self.render_timer.setInterval(75)
         self.render_timer.timeout.connect(self.render)
         root = QWidget()
         root.setObjectName('root')
@@ -113,6 +120,7 @@ class Window(QMainWindow):
         side.addLayout(section)
         helper = QLabel('Un poco de nostalgia, en cada foto.')
         helper.setObjectName('muted')
+        self.library_hint = helper
         side.addWidget(helper)
         self.search = QLineEdit()
         self.search.setPlaceholderText('Buscar película…')
@@ -267,7 +275,8 @@ class Window(QMainWindow):
         self.look.currentTextChanged.connect(self.selected_look)
         self.origin.currentTextChanged.connect(self.refresh_gallery)
         self.search.textChanged.connect(self.refresh_gallery)
-        self.gallery.currentItemChanged.connect(self.selected_card)
+        self.gallery.itemClicked.connect(self.selected_card)
+        self.gallery.itemActivated.connect(self.selected_card)
         self.grain.currentTextChanged.connect(self.render)
         for control in (self.exposure,self.temperature,self.intensity):
             control.valueChanged.connect(self.adjustments_changed)
@@ -279,6 +288,28 @@ class Window(QMainWindow):
         QShortcut(QKeySequence.StandardKey.SaveAs,self,activated=self.save)
         self.refresh_gallery()
         self.set_busy(False)
+        QTimer.singleShot(0,self.load_gallery)
+
+    def load_gallery(self):
+        if self.closing_preview: return
+        self.library_hint.setText("Preparando referencias…")
+        self.gallery_job = Job(reference_thumbnails,self)
+        self.gallery_job.done.connect(self.gallery_loaded)
+        self.gallery_job.failed.connect(lambda _: self.library_hint.setText("Referencias no disponibles"))
+        self.gallery_job.finished.connect(self.gallery_finished)
+        self.gallery_job.start()
+
+    def gallery_loaded(self, images):
+        if self.closing_preview: return
+        self.thumbs.update({name:add_canister(pixmap(rgb),metadata(name)["label"]) for name,rgb in images.items() if name in LOOKS})
+        self.library_hint.setText("Un poco de nostalgia, en cada foto.")
+        self.refresh_gallery()
+
+    def gallery_finished(self):
+        worker=self.gallery_job
+        self.gallery_job=None
+        if worker is not None: worker.deleteLater()
+        if self.closing_preview: self.close()
 
     def import_custom(self):
         path,_=QFileDialog.getOpenFileName(self,'Añadir perfil sRGB','','LUT o receta (*.cube *.png *.json)')
@@ -295,13 +326,12 @@ class Window(QMainWindow):
             self.origin.blockSignals(False)
             self.search.clear()
             self.refresh_gallery()
-            self.look.setCurrentText(key)
             self.status.setText('Perfil guardado en tu biblioteca local · entrada sRGB')
         except (OSError,ValueError,KeyError) as exc:
             self.error(str(exc))
 
     def save_recipe(self):
-        base=self.look.currentText()
+        base=self.active_look
         if not base:
             return
         base,_ = edit_settings(base)
@@ -319,7 +349,7 @@ class Window(QMainWindow):
             except (OSError,ValueError) as exc: self.error(str(exc))
 
     def refresh_gallery(self, *_):
-        previous = self.look.currentText()
+        previous = self.active_look
         names = filtered_names(self.origin.currentText(), self.search.text())
         self.look.blockSignals(True)
         self.gallery.blockSignals(True)
@@ -340,20 +370,28 @@ class Window(QMainWindow):
                 placeholder.fill(Qt.GlobalColor.darkGray)
                 item.setIcon(QIcon(placeholder))
             self.gallery.addItem(item)
-        if names:
-            self.look.setCurrentIndex(names.index(previous) if previous in names else 0)
-            self.gallery.setCurrentRow(self.look.currentIndex())
+        index = names.index(previous) if previous in names else -1
+        self.look.setCurrentIndex(index)
+        self.gallery.setCurrentRow(index)
         self.look.blockSignals(False)
         self.gallery.blockSignals(False)
         self.count.setText(f'{len(names)} / {len(LOOKS)}')
-        self.selected_look()
+        if not self.active_look:
+            self.details.setText('Elige una tarjeta y haz clic o pulsa Enter para aplicar la película.')
 
     def selected_card(self, item, previous=None):
         if item:
-            self.look.setCurrentText(item.data(Qt.ItemDataRole.UserRole))
+            name=item.data(Qt.ItemDataRole.UserRole)
+            if self.look.currentText()==name:
+                self.selected_look()
+            else:
+                self.look.setCurrentText(name)
 
     def selected_look(self, *_):
         name = self.look.currentText()
+        if not name or name==self.active_look:
+            return
+        self.active_look=name
         if name:
             info = metadata(name)
             self.details.setText(info['label']+'\n'+info['detail'])
@@ -392,7 +430,7 @@ class Window(QMainWindow):
         self.progress.setVisible(busy)
         for control in (self.exposure,self.temperature,self.intensity,self.reset_button,self.export_format):
             control.setEnabled(not busy)
-        self.save_button.setEnabled(not busy and self.linear is not None and bool(self.look.currentText()))
+        self.save_button.setEnabled(not busy and self.linear is not None and bool(self.active_look))
 
     def adjustment_values(self):
         return {'exposure_ev':self.exposure.value(), 'temperature':self.temperature.value(),
@@ -434,27 +472,67 @@ class Window(QMainWindow):
         self.photo_title.setText(self.source.name)
         self.photo_title.setToolTip(self.source.name)
         self.photo_meta.setText(f'{self.linear.shape[1]} × {self.linear.shape[0]} · Sony RAW')
-        step = max(1, (max(self.linear.shape[:2])+1599)//1600)
+        step = max(1, (max(self.linear.shape[:2])+1279)//1280)
         self.preview_step = step
         self.preview = self.linear[::step, ::step].copy()
         self.refresh_gallery()
+        self.render()
         self.status.setText(f'{self.source.name} · {self.linear.shape[1]} × {self.linear.shape[0]}')
 
     def render(self, *_):
-        if self.preview is None or not self.look.currentText():
-            return
         self.render_timer.stop()
-        self.pixmaps = []
-        before,after = render_edit(self.preview,self.look.currentText(),**self.adjustment_values())
-        after = apply_grain(after,self.grain.currentText(),step=self.preview_step)
-        for rgb in (before, after):
-            a = uint8(rgb)
-            image = QImage(a.data, a.shape[1], a.shape[0], a.strides[0], QImage.Format.Format_RGB888).copy()
-            self.pixmaps.append(QPixmap.fromImage(image))
+        self.preview_revision += 1
+        if self.preview is None:
+            self.preview_pending = None
+            return
+        # Keep only the newest request while one render is in progress.
+        self.preview_pending = (self.preview_revision,self.preview,self.active_look,
+                                self.adjustment_values(),self.grain.currentText(),self.preview_step)
+        if self.preview_job is None:
+            self.start_preview()
+
+    def start_preview(self):
+        if self.preview_pending is None or self.closing_preview:
+            return
+        revision,source,name,values,grain,step = self.preview_pending
+        self.preview_pending = None
+        if name:
+            self.after_title.setText('ACTUALIZANDO · '+metadata(name)['label'].upper())
+        worker = Job(lambda: self.preview_pipeline.render(source,name,**values,grain=grain,step=step),self)
+        self.preview_job = worker
+        worker.done.connect(lambda images: self.show_preview(revision,images))
+        worker.failed.connect(lambda message: self.preview_failed(revision,message))
+        worker.finished.connect(self.preview_finished)
+        worker.start()
+
+    def show_preview(self, revision, images):
+        if revision != self.preview_revision or self.closing_preview:
+            return
+        self.pixmaps = [pixmap(rgb) if rgb is not None else None for rgb in images]
+        self.after_title.setText('CON PELÍCULA · '+metadata(self.active_look)['label'].upper()
+                                 if self.active_look else 'CON PELÍCULA')
         self.fit_images()
+
+    def preview_failed(self, revision, message):
+        if revision == self.preview_revision and not self.closing_preview:
+            self.error(message)
+
+    def preview_finished(self):
+        worker=self.preview_job
+        self.preview_job=None
+        if worker is not None:
+            worker.deleteLater()
+        if self.closing_preview:
+            self.close()
+        else:
+            self.start_preview()
 
     def fit_images(self):
         for view, pixmap in zip(self.views, self.pixmaps):
+            if pixmap is None:
+                view.clear()
+                view.setText('Elige una película de la colección\nHaz clic o pulsa Enter para aplicarla.')
+                continue
             view.setPixmap(pixmap.scaled(view.size(), Qt.AspectRatioMode.KeepAspectRatio,
                                         Qt.TransformationMode.SmoothTransformation))
 
@@ -467,8 +545,8 @@ class Window(QMainWindow):
         self.fit_images()
 
     def save(self):
-        if self.linear is None or self.busy or not self.look.currentText(): return
-        tag = look_slug(self.look.currentText())
+        if self.linear is None or self.busy or not self.active_look: return
+        tag = look_slug(self.active_look)
         grain = self.grain.currentText()
         grain_tag = '' if grain == 'Desactivado' else '_grano_' + grain.lower()
         raw = self.export_format.currentIndex() == 1
@@ -481,7 +559,7 @@ class Window(QMainWindow):
             destination = Path(path)
             if not destination.suffix:
                 destination = destination.with_suffix(suffix)
-            name = self.look.currentText()
+            name = self.active_look
             values = self.adjustment_values()
             if raw:
                 operation = lambda: export_raw_bundle(self.source,name,destination,grain=grain,**values)
@@ -495,7 +573,15 @@ class Window(QMainWindow):
         if self.job is not None and self.job.isRunning():
             self.status.setText('Espera a que termine la operación antes de cerrar.')
             event.ignore()
+        elif self.preview_job is not None or self.gallery_job is not None:
+            self.closing_preview = True
+            self.preview_pending = None
+            self.render_timer.stop()
+            event.ignore()
         else:
+            self.closing_preview = True
+            self.render_timer.stop()
+            self.preview_pending = None
             event.accept()
 
 

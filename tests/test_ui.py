@@ -6,15 +6,17 @@ from PySide6.QtWidgets import QApplication
 from film_poc.ui import Window, Job
 
 
-def test_window_render_and_background_job(tmp_path):
+def test_window_render_and_background_job(tmp_path,wait_window):
     app = QApplication.instance() or QApplication([])
     window = Window()
     window.show()
     app.processEvents()
     assert not window.save_button.isEnabled()
+    window.look.setCurrentIndex(0)
     window.loaded((tmp_path / 'synthetic.arw', np.full((100, 160, 3), .18, dtype=np.float32)))
     window.set_busy(False)
     assert window.save_button.isEnabled()
+    wait_window(window)
     assert len(window.pixmaps) == 2
     assert all(not pixmap.isNull() for pixmap in window.pixmaps)
     assert window.look.count() == 31
@@ -28,15 +30,17 @@ def test_window_render_and_background_job(tmp_path):
     assert job.wait(5000)
     app.processEvents()
     assert received == [42]
+    wait_window(window)
     window.close()
 
 
-def test_edit_controls_and_raw_export_route(tmp_path,monkeypatch):
+def test_edit_controls_and_raw_export_route(tmp_path,monkeypatch,wait_window):
     import json
     import zipfile
     from film_poc import ui
     app=QApplication.instance() or QApplication([])
     window=Window()
+    window.look.setCurrentIndex(0)
     source=tmp_path/'input.arw'
     source.write_bytes(b'original sensor bytes')
     window.loaded((source,np.full((30,40,3),.1,dtype=np.float32)))
@@ -44,6 +48,7 @@ def test_edit_controls_and_raw_export_route(tmp_path,monkeypatch):
     window.temperature.setValue(25)
     window.intensity.setValue(40)
     window.render()
+    wait_window(window)
     assert len(window.pixmaps)==2
     output=tmp_path/'preserved.zip'
     monkeypatch.setattr(ui.QFileDialog,'getSaveFileName',lambda *args: (str(output),''))
@@ -57,4 +62,5 @@ def test_edit_controls_and_raw_export_route(tmp_path,monkeypatch):
     window.reset_adjustments()
     assert window.adjustment_values()=={'exposure_ev':0,'temperature':0,'intensity':1}
     window.render_timer.stop()
+    wait_window(window)
     window.close()

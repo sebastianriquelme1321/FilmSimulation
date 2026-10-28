@@ -56,7 +56,7 @@ def reference_thumbnails():
     reference=reference_linear()
     return {name: (np.asarray(Image.open(folder/manifest[name]).convert('RGB')).copy()
                    if name in manifest and (folder/manifest[name]).exists()
-                   else uint8(apply_look(reference,name))) for name in LOOKS}
+                   else uint8(apply_look(reference,name))) for name in tuple(LOOKS)}
 
 
 def reference_linear():

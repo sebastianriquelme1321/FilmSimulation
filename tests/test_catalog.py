@@ -16,9 +16,10 @@ def test_origin_groups_cover_catalog_without_overlap():
     assert metadata('Kodak Gold 200 (película aproximada)')['origin']=='spektrafilm / Film Lab'
 
 
-def test_filter_selection_search_empty_and_thumbnail_integrity(tmp_path):
+def test_filter_selection_search_empty_and_thumbnail_integrity(tmp_path,wait_window):
     app=QApplication.instance() or QApplication([])
     window=Window()
+    wait_window(window)
     source=np.random.default_rng(19).random((40,60,3),dtype=np.float32)
     previews=reference_thumbnails()
     assert set(previews)==set(LOOKS)
@@ -34,15 +35,21 @@ def test_filter_selection_search_empty_and_thumbnail_integrity(tmp_path):
     window.origin.setCurrentText('darktable')
     assert window.look.count()==window.gallery.count()==5
     window.gallery.setCurrentRow(2)
-    assert window.look.currentText()==window.gallery.currentItem().data(256)
+    assert window.active_look is None
+    window.gallery.itemClicked.emit(window.gallery.currentItem())
+    active=window.active_look
+    assert active==window.gallery.currentItem().data(256)
     window.search.setText('does-not-exist')
-    assert window.gallery.count()==0 and not window.save_button.isEnabled()
+    assert window.gallery.count()==0 and window.active_look==active
     window.search.clear()
     window.origin.setCurrentIndex(0)
     window.search.setText('Gold 200')
     assert window.gallery.count()==1
-    assert 'Gold 200' in window.look.currentText() and window.save_button.isEnabled()
+    assert window.active_look==active and window.look.currentIndex()==-1
+    window.gallery.itemClicked.emit(window.gallery.item(0))
+    assert 'Gold 200' in window.active_look and window.save_button.isEnabled()
     assert 'spektrafilm' in window.details.text()
+    wait_window(window)
     window.close()
 
 

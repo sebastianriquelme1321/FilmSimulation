@@ -37,3 +37,9 @@ La exposición (−3 a +3 EV) y la temperatura relativa se aplican en RGB lineal
 El selector de exportación ofrece **JPEG procesado** o **RAW original + ajustes (.zip)**. El ZIP conserva el ARW byte por byte con sus metadatos originales, una receta JSON, un checksum SHA-256 y la LUT local cuando corresponde. No modifica el mosaico del sensor ni incorpora el look en el ARW. Para restaurar: extraer el archivo, importar el ARW y añadir `edit.recipe.json` a la biblioteca. Si incluye `library/`, copiar su contenido a la biblioteca local y reiniciar antes de importar la receta. Otros editores no interpretan automáticamente este formato. No se exporta DNG procesado.
 
 Los perfiles incluidos y las LUT importadas trabajan con entrada sRGB. No hay conversión automática de Rec.709, S-Log u otras curvas Log; un selector de gamma por sí solo no corrige primarias, gamut ni la exposición de referencia de una LUT.
+
+## Navegación y rendimiento
+
+Buscar, cambiar de origen o recorrer tarjetas con las flechas no aplica una película. Haz clic en una tarjeta o confirma con Enter. La simulación activa se conserva aunque quede fuera del filtro; al importar una foto sin película seleccionada se muestra únicamente la base ajustada.
+
+Las referencias se preparan en segundo plano. Las tablas decodificadas se guardan en una caché local descartable dentro de la biblioteca; la primera preparación puede tardar más. Si la caché falta o está dañada, se vuelve a calcular. Las vistas previas usan un máximo de 1280 píxeles de lado largo y un hilo independiente con una sola petición pendiente: al cambiar controles rápidamente se conserva el último ajuste. La base y la simulación se reutilizan al variar intensidad o grano. La exportación conserva la resolución original y el mismo proceso de color; no usa los píxeles reducidos de la previsualización.
