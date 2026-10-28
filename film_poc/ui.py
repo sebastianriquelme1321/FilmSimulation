@@ -13,7 +13,9 @@ from .grain import GRAIN, apply_grain
 from .catalog import metadata, origins, filtered_names, reference_thumbnails, reference_linear
 from .film_badge import add_canister
 from . import user_library
-from .theme import STYLE
+from .theme import THEMES, stylesheet
+from .preferences import load_theme, save_theme
+from .backdrop import StudioBackdrop
 from .raw_export import export_raw_bundle
 from .preview import PreviewPipeline
 import json
@@ -71,9 +73,11 @@ class Window(QMainWindow):
         self.render_timer.setSingleShot(True)
         self.render_timer.setInterval(75)
         self.render_timer.timeout.connect(self.render)
-        root = QWidget()
+        self.theme_name = load_theme()
+        root = StudioBackdrop(self.theme_name)
+        self.backdrop = root
         root.setObjectName('root')
-        self.setStyleSheet(STYLE)
+        self.setStyleSheet(stylesheet(self.theme_name))
         layout = QVBoxLayout(root)
         layout.setContentsMargins(24, 22, 24, 16)
         layout.setSpacing(18)
@@ -85,6 +89,7 @@ class Window(QMainWindow):
         identity.addWidget(eyebrow)
         brand = QLabel('FilmSimulation')
         brand.setObjectName('brand')
+        self.brand = brand
         identity.addWidget(brand)
         header.addLayout(identity)
         header.addStretch()
@@ -110,7 +115,7 @@ class Window(QMainWindow):
         side.setContentsMargins(18, 20, 18, 18)
         side.setSpacing(10)
         section = QHBoxLayout()
-        heading = QLabel('Tu colección')
+        heading = QLabel('Películas')
         heading.setObjectName('sectionTitle')
         section.addWidget(heading)
         section.addStretch()
@@ -279,6 +284,15 @@ class Window(QMainWindow):
         signature = QLabel('RAW → FILM → JPEG')
         signature.setObjectName('eyebrow')
         footer.addWidget(signature)
+        footer.addSpacing(16)
+        footer.addWidget(QLabel('Aspecto'))
+        self.theme_selector = QComboBox()
+        for key,label in THEMES.items():
+            self.theme_selector.addItem(label,key)
+        self.theme_selector.setCurrentIndex(list(THEMES).index(self.theme_name))
+        self.theme_selector.setAccessibleName('Tema visual de la aplicación')
+        self.theme_selector.setToolTip('Cambia el aspecto de la app; mantiene el color de la foto.')
+        footer.addWidget(self.theme_selector)
         layout.addLayout(footer)
         self.progress=QProgressBar()
         self.progress.setRange(0,0)
@@ -304,7 +318,27 @@ class Window(QMainWindow):
         QShortcut(QKeySequence.StandardKey.SaveAs,self,activated=self.save)
         self.refresh_gallery()
         self.set_busy(False)
+        self.theme_selector.currentIndexChanged.connect(self.change_theme)
+        self.apply_theme(self.theme_name)
         QTimer.singleShot(0,self.load_gallery)
+
+    def apply_theme(self, theme):
+        self.theme_name=theme
+        self.backdrop.theme=theme
+        self.setStyleSheet(stylesheet(theme))
+        self.brand.setText('Film<i>Simulation</i>' if theme=='glass' else 'FilmSimulation')
+        margin=20 if theme=='glass' else 16
+        self.backdrop.layout().setContentsMargins(margin,16,margin,12)
+        self.backdrop.layout().setSpacing(14 if theme=='glass' else 10)
+        self.backdrop.update()
+
+    def change_theme(self, *_):
+        theme=self.theme_selector.currentData()
+        self.apply_theme(theme)
+        try:
+            save_theme(theme)
+        except OSError:
+            self.status.setText('Tema aplicado; no se pudo guardar la preferencia local.')
 
     def load_gallery(self):
         if self.closing_preview: return
@@ -527,6 +561,7 @@ class Window(QMainWindow):
     def show_preview(self, revision, images):
         if revision != self.preview_revision or self.closing_preview:
             return
+        self.backdrop.set_reference(images[0])
         self.pixmaps = [pixmap(rgb) if rgb is not None else None for rgb in images]
         self.after_title.setText('CON PELÍCULA · '+metadata(self.active_look)['label'].upper()
                                  if self.active_look else 'CON PELÍCULA')

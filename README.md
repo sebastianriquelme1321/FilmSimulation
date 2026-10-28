@@ -43,3 +43,7 @@ Los perfiles incluidos y las LUT importadas trabajan con entrada sRGB. No hay co
 Buscar, cambiar de origen o recorrer tarjetas con las flechas no aplica una película. Haz clic en una tarjeta o confirma con Enter. La simulación activa se conserva aunque quede fuera del filtro; al importar una foto sin película seleccionada se muestra únicamente la base ajustada.
 
 Las referencias se preparan en segundo plano. Las tablas decodificadas se guardan en una caché local descartable dentro de la biblioteca; la primera preparación puede tardar más. Si la caché falta o está dañada, se vuelve a calcular. Las vistas previas usan un máximo de 1280 píxeles de lado largo y un hilo independiente con una sola petición pendiente: al cambiar controles rápidamente se conserva el último ajuste. La base y la simulación se reutilizan al variar intensidad o grano. La exportación conserva la resolución original y el mismo proceso de color; no usa los píxeles reducidos de la previsualización.
+
+## Apariencia
+
+El selector **Aspecto**, en la esquina inferior derecha, alterna entre **Cuarto oscuro** (grafito mate y ámbar) y **Vidrio y luz** (paneles translúcidos y fondo ambiental derivado de la foto). La preferencia se conserva localmente. El visor de la fotografía mantiene un gris neutro en ambos temas. Cambiar de tema no reprocesa ni modifica la imagen exportada. El fondo ambiental se difumina a baja resolución y se reutiliza al mover los controles.

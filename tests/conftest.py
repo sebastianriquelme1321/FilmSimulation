@@ -31,3 +31,14 @@ def wait_window():
         assert not pending(), 'Preview worker did not finish'
         QApplication.processEvents()
     return wait
+
+
+@pytest.fixture(scope='session',autouse=True)
+def qt_application():
+    import os
+    os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
+    from PySide6.QtWidgets import QApplication
+    app=QApplication.instance() or QApplication([])
+    yield app
+    app.closeAllWindows()
+    app.processEvents()
