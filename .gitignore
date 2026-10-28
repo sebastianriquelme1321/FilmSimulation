@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.ARW
+*.arw
+pruebas-*/
+build/
+dist/
+*.egg-info/
+.DS_Store
+.env
+.env.*
+!.env.example

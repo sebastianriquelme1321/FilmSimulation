@@ -1,0 +1,9 @@
+Source: https://github.com/sohan-shingade/fujiLUT
+Revision: f3bead9b6d8dbc3f8ea489b70850fbc42fb4db46
+README license section, reproduced verbatim:
+
+## License
+
+MIT
+
+Upstream provides no standalone LICENSE or copyright statement at this revision. Attribution: sohan-shingade/fujiLUT. Adapted files and changes are documented in THIRD_PARTY_NOTICES.md.

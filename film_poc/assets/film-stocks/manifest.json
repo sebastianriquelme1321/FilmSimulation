@@ -1,0 +1,44 @@
+{
+  "Kodak Gold 200": {
+    "file": "kodak_gold_200.png",
+    "sha256": "92eca554b7a572e5e9459bcf9efa6e856f02bad6b3188009b6f287733dc7b01a",
+    "source": "film-lab / spektrafilm",
+    "license": "CC-BY-SA-4.0",
+    "domain": "sRGB encoded"
+  },
+  "Kodak Portra 160": {
+    "file": "kodak_portra_160.png",
+    "sha256": "aa1e2343d81aa711a736b086007423b948c64406fc3c73f25f888f5e3c08e0eb",
+    "source": "NatronGitHub/clut / Pat David",
+    "license": "CC-BY-SA-4.0",
+    "domain": "sRGB encoded"
+  },
+  "Kodak Portra 400": {
+    "file": "kodak_portra_400.png",
+    "sha256": "1e55696363f4bb45222616e000e9e099a538fbb116605eea7b75852200d6d3f0",
+    "source": "NatronGitHub/clut / Pat David",
+    "license": "CC-BY-SA-4.0",
+    "domain": "sRGB encoded"
+  },
+  "Kodak Portra 800": {
+    "file": "kodak_portra_800.png",
+    "sha256": "62573754ec195d05a3ae4e1efbad9a70541871efe6e9c9787503bd37c7f8e742",
+    "source": "NatronGitHub/clut / Pat David",
+    "license": "CC-BY-SA-4.0",
+    "domain": "sRGB encoded"
+  },
+  "Kodak Kodachrome 64": {
+    "file": "kodak_kodachrome_64.png",
+    "sha256": "3692b26b0778714e145e3a53ce893a4a9b7bfc8c5083a7afd0bd1a6bccc97968",
+    "source": "NatronGitHub/clut / Pat David",
+    "license": "CC-BY-SA-4.0",
+    "domain": "sRGB encoded"
+  },
+  "Ilford HP5 Plus 400": {
+    "file": "ilford_hp5_plus_400.png",
+    "sha256": "11d83251c20b4cee66950ab680c6ba62af14e9a5d279865218d045b8fa6fb2ec",
+    "source": "NatronGitHub/clut / Pat David",
+    "license": "CC-BY-SA-4.0",
+    "domain": "sRGB encoded"
+  }
+}

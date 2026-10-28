@@ -1,0 +1,3 @@
+include LICENSE THIRD_PARTY_NOTICES.md
+recursive-include vendor *.c
+recursive-include film_poc/assets *
