@@ -59,3 +59,5 @@ QSlider::handle:horizontal { background: #fffdf7; border: 1px solid #b88b35; wid
 QSlider::handle:horizontal:focus { border: 2px solid #7b5c24; }
 QSlider::handle:horizontal:disabled { border-color: #aaa; background: #ddd; }
 """
+
+STYLE += "QDoubleSpinBox QLineEdit { border: none; background: transparent; padding: 0; }"

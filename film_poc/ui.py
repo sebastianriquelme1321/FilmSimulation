@@ -203,7 +203,22 @@ class Window(QMainWindow):
         self.exposure.setSingleStep(.1)
         self.exposure.setSuffix(' EV')
         self.exposure.setAccessibleName('Exposición antes de la simulación')
-        controls.addWidget(self.exposure,0,1)
+        self.exposure.setKeyboardTracking(False)
+        self.exposure.setFixedWidth(108)
+        self.exposure.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.exposure.setToolTip('Escribe un valor exacto entre −3 y +3 EV y pulsa Enter.')
+        self.exposure_slider = QSlider(Qt.Orientation.Horizontal)
+        self.exposure_slider.setRange(-300,300)
+        self.exposure_slider.setSingleStep(10)
+        self.exposure_slider.setPageStep(50)
+        self.exposure_slider.setMinimumWidth(80)
+        self.exposure_slider.setAccessibleName('Deslizador de exposición en EV')
+        self.exposure_slider.setToolTip('Arrastra para aclarar u oscurecer. Flechas: 0,1 EV; RePág/AvPág: 0,5 EV.')
+        exposure_row = QHBoxLayout()
+        exposure_row.setSpacing(10)
+        exposure_row.addWidget(self.exposure_slider,1)
+        exposure_row.addWidget(self.exposure)
+        controls.addLayout(exposure_row,0,1,1,2)
         self.temperature = QSlider(Qt.Orientation.Horizontal)
         self.temperature.setRange(-100,100)
         self.temperature.setAccessibleName('Temperatura relativa: frío a cálido')
@@ -280,6 +295,7 @@ class Window(QMainWindow):
         self.grain.currentTextChanged.connect(self.render)
         for control in (self.exposure,self.temperature,self.intensity):
             control.valueChanged.connect(self.adjustments_changed)
+        self.exposure_slider.valueChanged.connect(lambda value: self.exposure.setValue(value/100))
         self.reset_button.clicked.connect(self.reset_adjustments)
         self.save_button.clicked.connect(self.save)
         self.import_button.clicked.connect(self.import_custom)
@@ -428,7 +444,7 @@ class Window(QMainWindow):
         self.import_button.setEnabled(not busy)
         self.recipe_button.setEnabled(not busy)
         self.progress.setVisible(busy)
-        for control in (self.exposure,self.temperature,self.intensity,self.reset_button,self.export_format):
+        for control in (self.exposure,self.exposure_slider,self.temperature,self.intensity,self.reset_button,self.export_format):
             control.setEnabled(not busy)
         self.save_button.setEnabled(not busy and self.linear is not None and bool(self.active_look))
 
@@ -437,6 +453,9 @@ class Window(QMainWindow):
                 'intensity':self.intensity.value()/100}
 
     def update_adjustment_labels(self):
+        self.exposure_slider.blockSignals(True)
+        self.exposure_slider.setValue(round(self.exposure.value()*100))
+        self.exposure_slider.blockSignals(False)
         self.temperature_label.setText(f'Temperatura · {self.temperature.value():+d}')
         self.intensity_label.setText(f'Look · {self.intensity.value()} %')
 
