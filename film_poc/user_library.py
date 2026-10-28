@@ -90,7 +90,7 @@ def apply(rgb,profile):
 
 
 def validate_recipe(data,registry):
-    allowed={'version','name','author','source','license','base_look','strength','grain','input_space'}
+    allowed={'version','name','author','source','license','base_look','strength','grain','input_space','exposure_ev','temperature'}
     if not isinstance(data,dict) or set(data)-allowed or data.get('version')!=1:
         raise ValueError('Receta no compatible. Usa el formato JSON de Film POC versión 1.')
     if data.get('input_space','sRGB')!='sRGB':
@@ -108,6 +108,8 @@ def validate_recipe(data,registry):
         raise ValueError('Grano de receta inválido.')
     if not isinstance(data.get('name'),str) or not data['name'].strip():
         raise ValueError('La receta necesita un nombre.')
+    from .adjustments import validate
+    validate(data.get('exposure_ev',0),data.get('temperature',0),strength)
     return data
 
 

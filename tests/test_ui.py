@@ -29,3 +29,32 @@ def test_window_render_and_background_job(tmp_path):
     app.processEvents()
     assert received == [42]
     window.close()
+
+
+def test_edit_controls_and_raw_export_route(tmp_path,monkeypatch):
+    import json
+    import zipfile
+    from film_poc import ui
+    app=QApplication.instance() or QApplication([])
+    window=Window()
+    source=tmp_path/'input.arw'
+    source.write_bytes(b'original sensor bytes')
+    window.loaded((source,np.full((30,40,3),.1,dtype=np.float32)))
+    window.exposure.setValue(.8)
+    window.temperature.setValue(25)
+    window.intensity.setValue(40)
+    window.render()
+    assert len(window.pixmaps)==2
+    output=tmp_path/'preserved.zip'
+    monkeypatch.setattr(ui.QFileDialog,'getSaveFileName',lambda *args: (str(output),''))
+    monkeypatch.setattr(window,'run_job',lambda operation,callback,message: callback(operation()))
+    window.export_format.setCurrentIndex(1)
+    window.save()
+    with zipfile.ZipFile(output) as archive:
+        recipe=json.loads(archive.read('edit.recipe.json'))
+        assert recipe['strength']==.4 and recipe['exposure_ev']==.8
+        assert recipe['temperature']==25
+    window.reset_adjustments()
+    assert window.adjustment_values()=={'exposure_ev':0,'temperature':0,'intensity':1}
+    window.render_timer.stop()
+    window.close()

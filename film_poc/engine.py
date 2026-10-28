@@ -15,6 +15,7 @@ from . import darktable_look
 from .grain import apply_grain
 from . import film_stocks
 from . import user_library
+from . import adjustments
 
 
 LOOKS = {
@@ -37,7 +38,7 @@ for _preset, _label in darktable_look.PRESETS.items():
 for _stock in film_stocks.STOCKS:
     LOOKS[f'{_stock} (película aproximada)'] = {
         'display_name': _stock, 'backend': 'film-stock', 'stock': _stock}
-PIPELINE_VERSION = 'v3.6-kodak-and-ilford'
+PIPELINE_VERSION = 'v4.1-base-adjustments-mix'
 
 
 def look_slug(name):
@@ -141,9 +142,9 @@ def apply_look(linear, name):
         return user_library.apply(x,profile)
     if profile.get('backend') == 'recipe':
         recipe=profile['recipe']
-        transformed=apply_look(linear,recipe['base_look'])
-        strength=recipe.get('strength',1.0)
-        return np.clip(x*(1-strength)+transformed*strength,0,1).astype(np.float32)
+        return render_edit(linear, recipe['base_look'],
+                           recipe.get('exposure_ev',0), recipe.get('temperature',0),
+                           recipe.get('strength',1.0))[1]
     rgb = apply_film_simulation(x.reshape(-1, 3), profile)
     # Upstream Sepia has saturation=0, which erases its warm matrix/tints.
     if profile['display_name'] != 'Sepia':
@@ -151,18 +152,43 @@ def apply_look(linear, name):
     return np.clip(rgb.reshape(x.shape), 0, 1).astype(np.float32)
 
 
+def edit_settings(name, exposure_ev=None, temperature=None, intensity=None):
+    profile=LOOKS[name]
+    recipe=profile.get('recipe',{}) if profile.get('backend')=='recipe' else {}
+    values={'exposure_ev': recipe.get('exposure_ev',0) if exposure_ev is None else exposure_ev,
+            'temperature': recipe.get('temperature',0) if temperature is None else temperature,
+            'intensity': recipe.get('strength',1) if intensity is None else intensity}
+    adjustments.validate(**values)
+    return recipe.get('base_look',name),values
+
+
+def render_edit(linear, name, exposure_ev=None, temperature=None, intensity=None):
+    """Return adjusted base and mixed look; both display-encoded sRGB, no grain."""
+    base_name,settings=edit_settings(name,exposure_ev,temperature,intensity)
+    corrected=adjustments.apply_base(linear,settings['exposure_ev'],settings['temperature'])
+    before=render_base(corrected)
+    amount=settings['intensity']
+    if amount==0:
+        return before,before.copy()
+    after=apply_look(corrected,base_name)
+    mixed=before*(1-amount)+after*amount
+    return before,np.clip(mixed,0,1).astype(np.float32)
+
+
 def uint8(rgb):
     return np.rint(np.clip(rgb, 0, 1)*255).astype(np.uint8)
 
 
-def export_jpeg(linear, name, destination, grain='Desactivado'):
+def export_jpeg(linear, name, destination, grain='Desactivado', *,
+                exposure_ev=None, temperature=None, intensity=None):
     """Render in strips to limit full-resolution temporary allocations; atomic save."""
     destination = Path(destination)
     if destination.suffix.lower() not in ('.jpg', '.jpeg'):
         raise ValueError('La salida debe ser .jpg o .jpeg.')
+    edit_settings(name,exposure_ev,temperature,intensity)
     out = np.empty(linear.shape, dtype=np.uint8)
     for row in range(0, len(linear), 256):
-        rgb = apply_look(linear[row:row+256], name)
+        _,rgb = render_edit(linear[row:row+256], name,exposure_ev,temperature,intensity)
         out[row:row+256] = uint8(apply_grain(rgb, grain, origin_y=row))
     icc = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
     fd, temp = tempfile.mkstemp(suffix='.jpg', dir=destination.parent)

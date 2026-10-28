@@ -50,3 +50,12 @@ QToolTip { background: #fffdf4; color: #33362e; border: 1px solid #cbbf9f; paddi
 """
 
 STYLE = STYLE.replace("__CHEVRON__", (Path(__file__).parent / "assets" / "icons" / "chevron.svg").as_posix())
+
+STYLE += """
+QDoubleSpinBox { background: #fffdf7; color: #41433a; border: 1px solid #deded4; border-radius: 10px; padding: 6px; min-height: 20px; }
+QSlider::groove:horizontal { height: 5px; background: #d9d6cb; border-radius: 2px; }
+QSlider::sub-page:horizontal { background: #b88b35; border-radius: 2px; }
+QSlider::handle:horizontal { background: #fffdf7; border: 1px solid #b88b35; width: 15px; margin: -6px 0; border-radius: 8px; }
+QSlider::handle:horizontal:focus { border: 2px solid #7b5c24; }
+QSlider::handle:horizontal:disabled { border-color: #aaa; background: #ddd; }
+"""

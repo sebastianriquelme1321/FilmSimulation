@@ -1,19 +1,20 @@
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QThread, Signal, QSize
+from PySide6.QtCore import Qt, QThread, Signal, QSize, QTimer
 from PySide6.QtGui import QImage, QPixmap, QIcon, QShortcut, QKeySequence
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                                QHBoxLayout, QLabel, QPushButton, QComboBox,
                                QFileDialog, QMessageBox, QLineEdit, QListWidget,
                                QListWidgetItem, QAbstractItemView, QSplitter, QProgressBar, QInputDialog,
-                               QFrame, QSizePolicy, QBoxLayout)
-from .engine import decode, render_base, apply_look, uint8, export_jpeg, LOOKS, look_slug
+                               QFrame, QSizePolicy, QBoxLayout, QDoubleSpinBox, QSlider, QGridLayout)
+from .engine import decode, render_base, apply_look, uint8, export_jpeg, LOOKS, look_slug, render_edit, edit_settings
 from .grain import GRAIN, apply_grain
 from .catalog import metadata, origins, filtered_names, reference_thumbnails, reference_linear
 from .film_badge import add_canister
 from . import user_library
 from .theme import STYLE
+from .raw_export import export_raw_bundle
 import json
 
 
@@ -58,6 +59,11 @@ class Window(QMainWindow):
         self.thumbs = {name: add_canister(pixmap(rgb),metadata(name)['label'])
                        for name,rgb in reference_thumbnails().items()}
         self.busy = False
+        self._selected_name = None
+        self.render_timer = QTimer(self)
+        self.render_timer.setSingleShot(True)
+        self.render_timer.setInterval(180)
+        self.render_timer.timeout.connect(self.render)
         root = QWidget()
         root.setObjectName('root')
         self.setStyleSheet(STYLE)
@@ -77,10 +83,15 @@ class Window(QMainWindow):
         header.addStretch()
         self.open_button = QPushButton('Importar RAW')
         self.open_button.setMinimumHeight(42)
-        self.save_button = QPushButton('Exportar JPEG')
+        self.save_button = QPushButton('Exportar')
+        self.export_format = QComboBox()
+        self.export_format.addItems(['JPEG procesado', 'RAW original + ajustes (.zip)'])
+        self.export_format.setAccessibleName('Formato de exportación')
+        self.export_format.setToolTip('RAW: copia intacta del ARW y receta FilmSimulation; no incorpora el look en los datos RAW.')
         self.save_button.setObjectName('primary')
         self.save_button.setMinimumHeight(42)
         header.addWidget(self.open_button)
+        header.addWidget(self.export_format)
         header.addWidget(self.save_button)
         layout.addLayout(header)
 
@@ -175,11 +186,41 @@ class Window(QMainWindow):
         self.grain.setMinimumWidth(122)
         info.addWidget(self.grain)
         workspace.addLayout(info)
+        controls = QGridLayout()
+        controls.setSpacing(10)
+        controls.addWidget(QLabel('Exposición'),0,0)
+        self.exposure = QDoubleSpinBox()
+        self.exposure.setRange(-3,3)
+        self.exposure.setDecimals(2)
+        self.exposure.setSingleStep(.1)
+        self.exposure.setSuffix(' EV')
+        self.exposure.setAccessibleName('Exposición antes de la simulación')
+        controls.addWidget(self.exposure,0,1)
+        self.temperature = QSlider(Qt.Orientation.Horizontal)
+        self.temperature.setRange(-100,100)
+        self.temperature.setAccessibleName('Temperatura relativa: frío a cálido')
+        self.temperature.setToolTip('Corrección RGB relativa al balance de cámara; no es una temperatura calibrada en Kelvin.')
+        self.temperature_label = QLabel('Temperatura · 0')
+        controls.addWidget(self.temperature_label,1,0)
+        controls.addWidget(self.temperature,1,1)
+        self.intensity = QSlider(Qt.Orientation.Horizontal)
+        self.intensity.setRange(0,100)
+        self.intensity.setValue(100)
+        self.intensity.setAccessibleName('Intensidad de la simulación en porcentaje')
+        self.intensity_label = QLabel('Look · 100 %')
+        controls.addWidget(self.intensity_label,1,2)
+        controls.addWidget(self.intensity,1,3)
+        self.reset_button = QPushButton('Restablecer')
+        self.reset_button.setToolTip('Restablece exposición, temperatura e intensidad; mantiene la película y el grano.')
+        controls.addWidget(self.reset_button,0,3)
+        controls.setColumnStretch(1,1)
+        controls.setColumnStretch(3,1)
+        workspace.addLayout(controls)
         self.panes = QBoxLayout(QBoxLayout.Direction.LeftToRight)
         self.panes.setSpacing(12)
         self.views = []
         self.after_title = None
-        for index, title in enumerate(('ORIGINAL', 'CON PELÍCULA')):
+        for index, title in enumerate(('BASE AJUSTADA', 'CON PELÍCULA')):
             frame = QFrame()
             frame.setObjectName('photoFrame')
             column = QVBoxLayout(frame)
@@ -187,7 +228,7 @@ class Window(QMainWindow):
             label = QLabel(title)
             label.setObjectName('photoLabel')
             label.setWordWrap(True)
-            label.setToolTip('Revelado RAW de referencia en sRGB' if index == 0 else 'Simulación y grano seleccionados')
+            label.setToolTip('Revelado sRGB con exposición y temperatura; sin simulación ni grano' if index == 0 else 'Simulación y grano seleccionados')
             column.addWidget(label)
             if index: self.after_title = label
             view = QLabel('Tu imagen empieza aquí\n\nImporta un archivo Sony .ARW' if index == 0
@@ -228,6 +269,9 @@ class Window(QMainWindow):
         self.search.textChanged.connect(self.refresh_gallery)
         self.gallery.currentItemChanged.connect(self.selected_card)
         self.grain.currentTextChanged.connect(self.render)
+        for control in (self.exposure,self.temperature,self.intensity):
+            control.valueChanged.connect(self.adjustments_changed)
+        self.reset_button.clicked.connect(self.reset_adjustments)
         self.save_button.clicked.connect(self.save)
         self.import_button.clicked.connect(self.import_custom)
         self.recipe_button.clicked.connect(self.save_recipe)
@@ -258,14 +302,15 @@ class Window(QMainWindow):
 
     def save_recipe(self):
         base=self.look.currentText()
-        if not base or LOOKS[base].get('backend')=='recipe':
-            self.error('Selecciona una simulación o LUT base para crear una receta.')
+        if not base:
             return
+        base,_ = edit_settings(base)
         name,ok=QInputDialog.getText(self,'Guardar receta','Nombre de tu receta:')
         if not ok or not name.strip(): return
         path,_=QFileDialog.getSaveFileName(self,'Guardar receta',name.strip()+'.json','Receta Film POC (*.json)')
         if path:
-            data={'version':1,'name':name.strip(),'base_look':base,'strength':1.0,
+            data={'version':1,'name':name.strip(),'base_look':base,'strength':self.intensity.value()/100,
+                  'exposure_ev':self.exposure.value(),'temperature':self.temperature.value(),
                   'grain':self.grain.currentText(),'input_space':'sRGB'}
             try:
                 user_library.validate_recipe(data,LOOKS)
@@ -313,7 +358,15 @@ class Window(QMainWindow):
             info = metadata(name)
             self.details.setText(info['label']+'\n'+info['detail'])
             self.after_title.setText('CON PELÍCULA · '+info['label'].upper())
-            if LOOKS[name].get('backend')=='recipe':
+            if LOOKS[name].get('backend')=='recipe' and name != self._selected_name:
+                _,values=edit_settings(name)
+                for control,value in ((self.exposure,values['exposure_ev']),
+                                      (self.temperature,int(values['temperature'])),
+                                      (self.intensity,round(values['intensity']*100))):
+                    control.blockSignals(True)
+                    control.setValue(value)
+                    control.blockSignals(False)
+                self.update_adjustment_labels()
                 self.grain.blockSignals(True)
                 self.grain.setCurrentText(LOOKS[name]['recipe'].get('grain','Desactivado'))
                 self.grain.blockSignals(False)
@@ -322,6 +375,7 @@ class Window(QMainWindow):
             self.gallery.blockSignals(False)
         else:
             self.details.setText('Sin coincidencias. Cambia el origen o la búsqueda.')
+        self._selected_name = name
         self.save_button.setEnabled(not self.busy and self.linear is not None and bool(name))
         self.render()
 
@@ -336,7 +390,26 @@ class Window(QMainWindow):
         self.import_button.setEnabled(not busy)
         self.recipe_button.setEnabled(not busy)
         self.progress.setVisible(busy)
+        for control in (self.exposure,self.temperature,self.intensity,self.reset_button,self.export_format):
+            control.setEnabled(not busy)
         self.save_button.setEnabled(not busy and self.linear is not None and bool(self.look.currentText()))
+
+    def adjustment_values(self):
+        return {'exposure_ev':self.exposure.value(), 'temperature':self.temperature.value(),
+                'intensity':self.intensity.value()/100}
+
+    def update_adjustment_labels(self):
+        self.temperature_label.setText(f'Temperatura · {self.temperature.value():+d}')
+        self.intensity_label.setText(f'Look · {self.intensity.value()} %')
+
+    def adjustments_changed(self, *_):
+        self.update_adjustment_labels()
+        self.render_timer.start()
+
+    def reset_adjustments(self):
+        self.exposure.setValue(0)
+        self.temperature.setValue(0)
+        self.intensity.setValue(100)
 
     def run_job(self, operation, callback, message):
         self.set_busy(True)
@@ -370,10 +443,11 @@ class Window(QMainWindow):
     def render(self, *_):
         if self.preview is None or not self.look.currentText():
             return
+        self.render_timer.stop()
         self.pixmaps = []
-        after = apply_grain(apply_look(self.preview, self.look.currentText()),
-                            self.grain.currentText(), step=self.preview_step)
-        for rgb in (render_base(self.preview), after):
+        before,after = render_edit(self.preview,self.look.currentText(),**self.adjustment_values())
+        after = apply_grain(after,self.grain.currentText(),step=self.preview_step)
+        for rgb in (before, after):
             a = uint8(rgb)
             image = QImage(a.data, a.shape[1], a.shape[0], a.strides[0], QImage.Format.Format_RGB888).copy()
             self.pixmaps.append(QPixmap.fromImage(image))
@@ -397,15 +471,25 @@ class Window(QMainWindow):
         tag = look_slug(self.look.currentText())
         grain = self.grain.currentText()
         grain_tag = '' if grain == 'Desactivado' else '_grano_' + grain.lower()
-        default = self.source.with_name(self.source.stem + f'_{tag}{grain_tag}_v3.jpg')
-        path, _ = QFileDialog.getSaveFileName(self, 'Exportar JPEG', str(default), 'JPEG (*.jpg *.jpeg)')
+        raw = self.export_format.currentIndex() == 1
+        suffix = '.zip' if raw else '.jpg'
+        default = self.source.with_name(self.source.stem + f'_{tag}{grain_tag}' + suffix)
+        title = 'RAW original + ajustes (sin look incorporado)' if raw else 'Exportar JPEG'
+        formats = 'RAW original y receta (*.zip)' if raw else 'JPEG (*.jpg *.jpeg)'
+        path, _ = QFileDialog.getSaveFileName(self, title, str(default), formats)
         if path:
             destination = Path(path)
             if not destination.suffix:
-                destination = destination.with_suffix('.jpg')
+                destination = destination.with_suffix(suffix)
             name = self.look.currentText()
-            self.run_job(lambda: export_jpeg(self.linear, name, destination, grain=grain),
-                         lambda _: self.status.setText(f'Exportado: {destination}'), 'Exportando resolución completa…')
+            values = self.adjustment_values()
+            if raw:
+                operation = lambda: export_raw_bundle(self.source,name,destination,grain=grain,**values)
+                message = 'Conservando RAW original y receta…'
+            else:
+                operation = lambda: export_jpeg(self.linear,name,destination,grain=grain,**values)
+                message = 'Exportando resolución completa…'
+            self.run_job(operation,lambda _: self.status.setText(f'Exportado: {destination}'),message)
 
     def closeEvent(self, event):
         if self.job is not None and self.job.isRunning():

@@ -11,3 +11,11 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Personal photographs and non-destructive RAW archives stay local.
+*.zip
+*.jpg
+*.jpeg
+*.dng
+*.tif
+*.tiff

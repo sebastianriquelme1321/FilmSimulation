@@ -29,3 +29,11 @@ El revelado usa rawpy/LibRaw y toma la miniatura de cámara como guía tonal cua
 Código combinado GPL-3.0-or-later; porciones adaptadas conservan sus atribuciones. LUT de película CC BY-SA 4.0 con avisos específicos. Consultar `LICENSE`, `THIRD_PARTY_NOTICES.md` y `film_poc/assets/film-stocks/ATTRIBUTION.md`. FujiLUT declara MIT en su README, sin aviso de copyright independiente en la revisión utilizada; esa declaración se conserva literalmente.
 
 Las únicas imágenes incluidas son tablas técnicas LUT necesarias para el procesamiento. Este repositorio no incluye fotografías de prueba, resultados, investigación ni conversaciones.
+
+## Ajustes y conservación del RAW
+
+La exposición (−3 a +3 EV) y la temperatura relativa se aplican en RGB lineal antes de codificar sRGB y aplicar el look. La temperatura es una corrección frío/cálido sobre el balance de cámara, no un ajuste de sensor calibrado en Kelvin. La intensidad mezcla la base ajustada y la simulación en sRGB; el grano se aplica después. La vista previa y la exportación usan el mismo proceso. Estos ajustes no recuperan información que el revelado inicial ya haya recortado.
+
+El selector de exportación ofrece **JPEG procesado** o **RAW original + ajustes (.zip)**. El ZIP conserva el ARW byte por byte con sus metadatos originales, una receta JSON, un checksum SHA-256 y la LUT local cuando corresponde. No modifica el mosaico del sensor ni incorpora el look en el ARW. Para restaurar: extraer el archivo, importar el ARW y añadir `edit.recipe.json` a la biblioteca. Si incluye `library/`, copiar su contenido a la biblioteca local y reiniciar antes de importar la receta. Otros editores no interpretan automáticamente este formato. No se exporta DNG procesado.
+
+Los perfiles incluidos y las LUT importadas trabajan con entrada sRGB. No hay conversión automática de Rec.709, S-Log u otras curvas Log; un selector de gamma por sí solo no corrige primarias, gamut ni la exposición de referencia de una LUT.
