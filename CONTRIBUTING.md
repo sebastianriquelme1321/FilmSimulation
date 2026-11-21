@@ -8,7 +8,7 @@ Requiere Python 3.12 (o 3.13).
 python3.12 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 python -m pip install -e ".[dev]"
 QT_QPA_PLATFORM=offscreen python -m pytest -q            # las pruebas de UI no abren ventanas
-ruff check film_poc
+ruff check .
 python -m film_poc                                       # ejecutar la app
 ```
 
@@ -68,14 +68,14 @@ de funciones) y compara con la tabla `FORBIDDEN`. `core` tampoco puede importar 
 ## Pruebas y CI
 
 El workflow `.github/workflows/tests.yml` ejecuta `pytest -q` y `python -m build` en Windows y
-macOS (arm64 e Intel) con `QT_QPA_PLATFORM=offscreen`. CI no ejecuta ruff: pasa `ruff check
-film_poc` antes de enviar (`tests/` y `launch.py` tienen avisos anteriores; no los empeores).
+macOS (arm64 e Intel) con `QT_QPA_PLATFORM=offscreen`. CI también ejecuta `ruff check .`:
+pásalo antes de enviar.
 Para el ejecutable, ver `packaging/README.md`.
 
 ## Checklist de PR
 
 - [ ] `QT_QPA_PLATFORM=offscreen python -m pytest -q` pasa, incluido `test_architecture.py`.
-- [ ] `ruff check film_poc` sin errores.
+- [ ] `ruff check .` sin errores.
 - [ ] Cambio en la capa correcta; sin imports que rompan la regla.
 - [ ] Prueba nueva o actualizada para el comportamiento cambiado.
 - [ ] Si añades datos de terceros, actualiza `THIRD_PARTY_NOTICES.md` y su atribución.

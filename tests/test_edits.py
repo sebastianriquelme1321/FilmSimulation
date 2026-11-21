@@ -1,18 +1,20 @@
-from pathlib import Path
 import hashlib
 import json
 import zipfile
+from pathlib import Path
+
 import numpy as np
 import pytest
 from PIL import Image
+
 from film_poc.core import adjustments
 from film_poc.core import render as engine
+from film_poc.core.grain import apply_grain
 from film_poc.core.looks import user_lut
 from film_poc.core.looks.recipe import validate_recipe
 from film_poc.services import library
 from film_poc.services.export_bundle import export_raw_bundle
 from film_poc.services.export_jpeg import export_jpeg
-from film_poc.core.grain import apply_grain
 
 
 def test_exposure_temperature_and_input_preservation():
@@ -25,7 +27,8 @@ def test_exposure_temperature_and_input_preservation():
     assert cool[0,0,0]<cool[0,0,2]
     np.testing.assert_array_equal(source,copy)
     for values in ((float('nan'),0,1),(0,101,1),(0,0,2)):
-        with pytest.raises(ValueError): adjustments.validate(*values)
+        with pytest.raises(ValueError):
+            adjustments.validate(*values)
 
 
 def test_mix_endpoints_and_recipe_round_trip(tmp_path):
@@ -46,7 +49,8 @@ def test_mix_endpoints_and_recipe_round_trip(tmp_path):
     try:
         np.testing.assert_allclose(engine.render_edit(source,key)[1],half,atol=1e-7)
         np.testing.assert_allclose(engine.apply_look(source,key),half,atol=1e-7)
-    finally: engine.LOOKS.pop(key)
+    finally:
+        engine.LOOKS.pop(key)
 
 
 def test_export_strips_match_preview_pipeline(tmp_path,monkeypatch):
@@ -82,7 +86,8 @@ def test_raw_archive_preserves_bytes_and_records_edit(tmp_path):
         validate_recipe(recipe,engine.LOOKS)
         assert recipe['exposure_ev']==.7 and recipe['strength']==.4
         assert str(tmp_path).encode() not in archive.read('export-info.json')
-    with pytest.raises(ValueError): export_raw_bundle(source,name,tmp_path/'wrong.arw')
+    with pytest.raises(ValueError):
+        export_raw_bundle(source,name,tmp_path/'wrong.arw')
 
 
 def test_raw_bundle_includes_portable_custom_lut(tmp_path,monkeypatch):
@@ -109,4 +114,5 @@ def test_raw_bundle_includes_portable_custom_lut(tmp_path,monkeypatch):
         assert key in loaded
         sample=np.array([[[.1,.3,.7]]],dtype=np.float32)
         np.testing.assert_allclose(user_lut.apply(sample,loaded[key]),sample,atol=1e-7)
-    finally: engine.LOOKS.pop(key)
+    finally:
+        engine.LOOKS.pop(key)

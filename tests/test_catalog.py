@@ -1,9 +1,11 @@
 import os
+
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import numpy as np
 from PySide6.QtWidgets import QApplication
-from film_poc.services.catalog import metadata,filtered_names,origins,reference_thumbnails
+
 from film_poc.core.render import LOOKS
+from film_poc.services.catalog import filtered_names, metadata, origins, reference_thumbnails
 from film_poc.ui import Window
 
 
@@ -17,13 +19,12 @@ def test_origin_groups_cover_catalog_without_overlap():
 
 
 def test_filter_selection_search_empty_and_thumbnail_integrity(tmp_path,wait_window):
-    app=QApplication.instance() or QApplication([])
+    QApplication.instance() or QApplication([])
     window=Window()
     wait_window(window)
     source=np.random.default_rng(19).random((40,60,3),dtype=np.float32)
     previews=reference_thumbnails()
     assert set(previews)==set(LOOKS)
-    original_icons=[window.gallery.item(i).icon().cacheKey() for i in range(31)]
     window.loaded(tmp_path/'test.arw',source)
     window.set_busy(False)
     assert window.gallery.count()==31

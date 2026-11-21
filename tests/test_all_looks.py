@@ -1,7 +1,8 @@
 import numpy as np
+from PIL import Image
+
 from film_poc.core.render import LOOKS, apply_look, look_slug
 from film_poc.services.export_jpeg import export_jpeg
-from PIL import Image
 
 
 def test_all_looks_export_distinct_names_and_valid_images(tmp_path):

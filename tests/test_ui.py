@@ -1,8 +1,10 @@
 import os
+
 os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 
 import numpy as np
 from PySide6.QtWidgets import QApplication
+
 from film_poc.ui import Window
 from film_poc.ui.jobs import Job
 
@@ -38,8 +40,9 @@ def test_window_render_and_background_job(tmp_path,wait_window):
 def test_edit_controls_and_raw_export_route(tmp_path,monkeypatch,wait_window):
     import json
     import zipfile
+
     from PySide6.QtWidgets import QFileDialog
-    app=QApplication.instance() or QApplication([])
+    QApplication.instance() or QApplication([])
     window=Window()
     window.gallery.look.setCurrentIndex(0)
     source=tmp_path/'input.arw'

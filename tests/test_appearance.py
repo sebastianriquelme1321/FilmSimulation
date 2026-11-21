@@ -1,8 +1,9 @@
 import json
+
 import numpy as np
+
 from film_poc.services import preferences
-from film_poc.ui.theme import THEMES
-from film_poc.ui.theme import DEFAULT_THEME
+from film_poc.ui.theme import DEFAULT_THEME, THEMES
 
 
 def test_corrupt_or_unknown_theme_falls_back(tmp_path):
@@ -40,6 +41,7 @@ def test_theme_switch_persists_without_reprocessing(tmp_path,wait_window):
 
 def test_stylesheet_assets_exist():
     from pathlib import Path
+
     from film_poc.ui.theme import stylesheet
     for theme in THEMES:
         assert Path(stylesheet(theme).split('url(')[1].split(')')[0]).is_file()

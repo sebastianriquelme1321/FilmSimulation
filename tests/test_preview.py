@@ -1,8 +1,9 @@
 import numpy as np
-from film_poc.core import render as engine
+
 from film_poc.core import adjustments
-from film_poc.core.preview import PreviewPipeline
+from film_poc.core import render as engine
 from film_poc.core.grain import apply_grain
+from film_poc.core.preview import PreviewPipeline
 
 
 def test_cached_preview_matches_export_and_reuses_look(monkeypatch):
@@ -31,10 +32,11 @@ def test_cached_preview_matches_export_and_reuses_look(monkeypatch):
 
 def test_latest_preview_wins_without_blocking_ui(tmp_path,monkeypatch,wait_window):
     import threading
+
     from PySide6.QtWidgets import QApplication
-    from PySide6.QtTest import QTest
+
     from film_poc.ui import Window
-    app=QApplication.instance() or QApplication([])
+    QApplication.instance() or QApplication([])
     window=Window()
     wait_window(window)
     entered=threading.Event()
@@ -79,8 +81,9 @@ def test_bad_disk_cache_is_rebuilt(tmp_path):
 
 def test_browsing_filters_does_not_apply_any_look(tmp_path,wait_window):
     from PySide6.QtWidgets import QApplication
+
     from film_poc.ui import Window
-    app=QApplication.instance() or QApplication([])
+    QApplication.instance() or QApplication([])
     window=Window()
     window.loaded(tmp_path/'test.arw',np.full((20,30,3),.1,dtype=np.float32))
     wait_window(window)

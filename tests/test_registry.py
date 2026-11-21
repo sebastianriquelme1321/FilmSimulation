@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 
 from film_poc.core import render as engine
-from film_poc.services.catalog import metadata
 from film_poc.core.looks.base import Look, LookRegistry
+from film_poc.services.catalog import metadata
 
 
 class Invert:

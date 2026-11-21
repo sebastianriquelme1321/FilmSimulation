@@ -49,6 +49,7 @@ def release_windows(qt_application):
     yield
     from PySide6.QtCore import QThread
     from PySide6.QtWidgets import QApplication
+
     from film_poc.ui import Window
     deadline=time.monotonic()+WAIT_SECONDS
     for window in [w for w in QApplication.topLevelWidgets() if isinstance(w,Window)]:

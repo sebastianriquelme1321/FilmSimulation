@@ -1,9 +1,14 @@
 from copy import deepcopy
+
 import numpy as np
-from film_poc.core.render import LOOKS, apply_look, render_base
+
+from film_poc.core.profile_transforms import (
+    _hue_weight,
+    apply_base_saturation,
+    apply_film_simulation,
+)
 from film_poc.core.profiles import PROFILES
-from film_poc.core.profile_transforms import (_hue_weight, apply_film_simulation,
-                                         apply_base_saturation)
+from film_poc.core.render import LOOKS, apply_look, render_base
 
 
 def test_hue_weight_continuous_at_boundary_and_wrap():
@@ -27,7 +32,8 @@ def test_linear_adapter_and_strip_consistency():
     for name, profile in LOOKS.items():
         if profile.backend:
             continue
-        expected = apply_film_simulation(render_base(linear).astype(np.float64).reshape(-1, 3), profile.params)
+        base = render_base(linear).astype(np.float64).reshape(-1, 3)
+        expected = apply_film_simulation(base, profile.params)
         if profile.display_name != 'Sepia':
             expected = apply_base_saturation(expected, profile.params['base_saturation'])
         expected = expected.reshape(linear.shape)
