@@ -21,7 +21,8 @@ def load(kind: str, key: str) -> Any:
     try:
         loader = _loaders[kind]
     except KeyError:
-        raise RuntimeError(f'No hay cargador de datos registrado para «{kind}».') from None
+        raise RuntimeError(f'No hay cargador de datos registrado para «{kind}»; '
+                           'llama antes a film_poc.services.library.install().') from None
     return loader(key)
 
 

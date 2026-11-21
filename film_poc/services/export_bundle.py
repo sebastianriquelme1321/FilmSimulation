@@ -11,15 +11,17 @@ from ..core import raw
 from ..core.grain import GRAIN
 from ..core.looks.recipe import validate_recipe
 from ..core.render import LOOKS, PIPELINE_VERSION, edit_settings
+from .library import install
 
 
 def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
                       grain: str = 'Desactivado', **adjustments: float) -> None:
     """Write a .zip with the untouched RAW, edit.recipe.json and export metadata."""
     source, destination = Path(source), Path(destination)
+    install()
     adapters.load_decoders()
     if not raw.is_supported(source) or not source.is_file():
-        raise ValueError('Selecciona un archivo Sony ARW original existente.')
+        raise ValueError(f'Selecciona un archivo {raw.supported_labels()} original existente.')
     if destination.suffix.lower() != '.zip':
         raise ValueError('RAW original + ajustes se guarda como archivo .zip.')
     if grain not in GRAIN:

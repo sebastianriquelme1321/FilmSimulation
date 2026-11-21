@@ -8,12 +8,14 @@ from ..adapters.storage import atomic_path
 from ..core.constants import JPEG_QUALITY, STRIP_ROWS
 from ..core.grain import apply_grain
 from ..core.render import edit_settings, render_edit, uint8
+from .library import install
 
 
 def export_jpeg(linear: np.ndarray, name: str, destination: str | Path, grain: str = 'Desactivado',
                 *, exposure_ev: float | None = None, temperature: float | None = None,
                 intensity: float | None = None) -> None:
     """Render in strips to limit full-resolution temporary allocations; atomic save."""
+    install()
     destination = Path(destination)
     if destination.suffix.lower() not in ('.jpg', '.jpeg'):
         raise ValueError('La salida debe ser .jpg o .jpeg.')

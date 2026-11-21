@@ -22,11 +22,11 @@ def fake():
 
 def test_register_get_and_order():
     reg = LookRegistry()
-    reg.register('b', Look('B'))
-    reg.register('a', {'display_name': 'A', 'backend': 'x', 'path': 'p'})
-    assert reg.names() == ['b', 'a'] and 'a' in reg and list(reg) == ['b', 'a']
+    reg['b'] = Look('B')
+    reg['a'] = {'display_name': 'A', 'backend': 'x', 'path': 'p'}
+    assert 'a' in reg and list(reg) == ['b', 'a']
     assert reg['a']['path'] == 'p' and reg['a'].get('missing') is None
-    assert [look.display_name for look in reg.all()] == ['B', 'A']
+    assert [look.display_name for look in dict(reg).values()] == ['B', 'A']
 
 
 def test_unknown_names_and_backends():

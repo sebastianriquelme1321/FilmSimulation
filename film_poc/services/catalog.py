@@ -6,18 +6,22 @@ from PIL import Image, ImageDraw
 
 from ..adapters import reference_files
 from ..core.render import LOOKS, apply_look, uint8
+from .library import install
 
 
 def metadata(name):
+    install()
     look = LOOKS[name]
     return {'name': name, 'label': look.display_name, 'origin': look.origin, 'detail': look.detail}
 
 
 def origins():
+    install()
     return list(dict.fromkeys(metadata(name)['origin'] for name in LOOKS))
 
 
 def filtered_names(origin='Todos los orígenes', query=''):
+    install()
     query = query.casefold().strip()
     return [name for name in LOOKS if
             (origin == 'Todos los orígenes' or metadata(name)['origin'] == origin) and
@@ -31,12 +35,16 @@ def thumbnails(linear):
     """
     step = max(1, (max(linear.shape[:2])+239)//240)
     small = np.ascontiguousarray(linear[::step,::step])
-    return {name: uint8(apply_look(small,name)) for name in LOOKS}
+    install()
+    # Runs in a worker: the UI starts it only while no look is being imported (busy/gallery_job
+    # guard), so LOOKS is stable; the snapshot keeps the iteration safe regardless.
+    return {name: uint8(apply_look(small,name)) for name in tuple(LOOKS)}
 
 
 @lru_cache(maxsize=1)
 def reference_thumbnails():
     """Load precomputed sample cards; independent of any imported user image."""
+    install()
     cards=reference_files.load_sample_cards(tuple(LOOKS))
     reference=reference_linear()
     return {name: cards[name] if name in cards else uint8(apply_look(reference,name))

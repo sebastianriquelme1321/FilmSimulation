@@ -18,7 +18,6 @@ from .lut3d import apply_lut3d
 
 # Bump when the LUT construction below changes: it is part of the disk-cache key.
 LUT_VERSION = 'darktable-lut-1'
-NAME = 'Classic Chrome · darktable (experimental)'
 PRESETS = {'chrome': 'Classic Chrome', 'astia': 'Astia', 'mchrome': 'Monochrome',
            'provia': 'Provia', 'velvia': 'Velvia'}
 _WHITE = np.array([.9642, 1, .8249])

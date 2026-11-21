@@ -3,14 +3,16 @@
 Local-only community library; imported content is validated and never executed.
 """
 import json
+import threading
 from pathlib import Path
 
 from ..adapters import darktable_files, film_stock_files, lut_files
-from ..adapters.storage import library_dir
+from ..adapters.storage import atomic_path, library_dir
 from ..core.looks.recipe import validate_recipe
 from ..core.render import LOOKS
 
 _installed = False
+_install_lock = threading.Lock()  # install() can run from worker threads
 
 
 def install() -> None:
@@ -18,10 +20,18 @@ def install() -> None:
     global _installed
     if _installed:
         return
-    darktable_files.register()
-    lut_files.register()
-    film_stock_files.register(LOOKS)
-    _installed = True
+    with _install_lock:
+        if _installed:
+            return
+        darktable_files.register()
+        lut_files.register()
+        film_stock_files.register(LOOKS)
+        _installed = True
+
+
+def _key(name: str, digest: str) -> str:
+    """Registry key of a user look: its name plus the short content digest."""
+    return f'{name} · local {digest[:8]}'
 
 
 def startup() -> list[str]:
@@ -44,6 +54,7 @@ def _profile(entry: dict, root: Path) -> dict:
 
 def import_profile(path: str | Path, registry: dict = LOOKS) -> str:
     """Validate and copy a LUT/recipe into the library; register it and return its key."""
+    install()
     path = Path(path)
     source = lut_files.read_source(path)
     label = path.stem[:70]
@@ -53,7 +64,7 @@ def import_profile(path: str | Path, registry: dict = LOOKS) -> str:
         recipe = validate_recipe(source.recipe, registry)
         entry.update({key: recipe.get(key, '') for key in ('name', 'author', 'source', 'license')})
         entry.update(backend='recipe', recipe=recipe)
-    key = f"{entry['name']} · local {source.digest[:8]}"
+    key = _key(entry['name'], source.digest)
     lut_files.store(path, source.digest, entry)
     registry[key] = _profile(entry, library_dir())
     return key
@@ -61,6 +72,7 @@ def import_profile(path: str | Path, registry: dict = LOOKS) -> str:
 
 def load_library(registry: dict = LOOKS) -> list[str]:
     """Register all valid library entries; return file names that failed to load."""
+    install()
     entries, warnings = lut_files.read_entries()
     root = library_dir()
     # LUTs first, then recipes referring to them.
@@ -75,7 +87,7 @@ def load_library(registry: dict = LOOKS) -> list[str]:
                     raise ValueError('LUT no encontrada')
             else:
                 raise ValueError('Tipo desconocido')
-            key = f"{entry['name']} · local {name[:8]}"
+            key = _key(entry['name'], name)  # name is '<digest>.entry.json'
             registry[key] = _profile(entry, root)
         except (KeyError, TypeError, OSError, ValueError):
             warnings.append(name)
@@ -84,5 +96,7 @@ def load_library(registry: dict = LOOKS) -> list[str]:
 
 def save_recipe(data: dict, path: str | Path) -> None:
     """Validate a recipe against the registry and write it as a shareable JSON file."""
+    install()
     validate_recipe(data, LOOKS)
-    Path(path).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+    with atomic_path(path) as temporary:
+        temporary.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')

@@ -70,18 +70,6 @@ class LookRegistry(MutableMapping):
         except KeyError:
             raise ValueError(f'Backend de look desconocido: {look.backend_id}') from None
 
-    def register(self, name: str, look: Look | dict) -> None:
-        self[name] = look
-
-    def all(self) -> list[Look]:
-        return list(self._looks.values())
-
-    def names(self) -> list[str]:
-        return list(self._looks)
-
-    def copy(self) -> dict:
-        return dict(self._looks)
-
     def __getitem__(self, name: str) -> Look:
         return self._looks[name]
 

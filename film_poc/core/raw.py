@@ -27,9 +27,12 @@ def is_supported(path: Path) -> bool:
     return path.suffix.lower() in _decoders
 
 
+def supported_labels() -> str:
+    return ' / '.join(dict.fromkeys(d.label for d in _decoders.values()))
+
+
 def decoder_for(path: Path) -> RawDecoder:
     try:
         return _decoders[path.suffix.lower()]
     except KeyError:
-        labels = ' / '.join(dict.fromkeys(d.label for d in _decoders.values()))
-        raise ValueError(f'Este POC acepta archivos {labels}.') from None
+        raise ValueError(f'Este POC acepta archivos {supported_labels()}.') from None
