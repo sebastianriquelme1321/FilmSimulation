@@ -11,7 +11,7 @@ Cada sistema debe compilarse en su propio sistema operativo (y arquitectura en m
 ## Compartir
 - macOS: `ditto -c -k --keepParent dist/FilmSimulation.app FilmSimulation-mac.zip`
 - Windows: comprimir la carpeta `dist/FilmSimulation` en un .zip.
-- Automatico: al subir una tag `v*` (p. ej. `git tag v0.6.0 && git push --tags`) el workflow
+- Automatico: al subir una tag `v*` (p. ej. `git tag v0.7.0-beta.1 && git push --tags`) el workflow
   `release.yml` compila Windows, macOS arm64 y macOS Intel y los adjunta a un GitHub Release.
 
 ## Apps sin firmar
