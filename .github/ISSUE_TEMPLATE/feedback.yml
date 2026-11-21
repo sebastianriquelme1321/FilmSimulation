@@ -1,0 +1,37 @@
+name: Feedback
+description: Cuéntanos qué te parece FilmSimulation
+title: "[Feedback] "
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por probar la beta. Todo se procesa en tu equipo y la aplicación no envía datos: este formulario es la única vía de feedback.
+  - type: textarea
+    id: liked
+    attributes:
+      label: Qué te ha gustado
+    validations:
+      required: false
+  - type: textarea
+    id: improve
+    attributes:
+      label: Qué mejorarías
+    validations:
+      required: true
+  - type: textarea
+    id: shot
+    attributes:
+      label: Con qué has fotografiado
+      description: Marca y modelo de cámara, formato RAW y sistema operativo.
+      placeholder: "Sony A7 III, ARW, macOS 15"
+    validations:
+      required: false
+  - type: textarea
+    id: system
+    attributes:
+      label: Información del sistema
+      description: Ayuda > Enviar feedback la rellena sola; también puedes pegarla desde Ayuda > Copiar información del sistema.
+      render: text
+    validations:
+      required: false

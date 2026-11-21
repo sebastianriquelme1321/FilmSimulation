@@ -95,6 +95,22 @@ Cada sistema (y, en macOS, cada arquitectura) debe compilarse en su propio equip
 
 El revelado usa rawpy/LibRaw y toma la miniatura de cámara como guía tonal cuando está disponible. Las simulaciones son aproximaciones y dependen del revelado y la escena. La exportación conserva resolución y añade un perfil ICC sRGB. No hay calibración colorimétrica ni equivalencia garantizada con cámaras Fujifilm o película analógica.
 
+## Feedback y soporte
+
+Es una beta gratuita y tu opinión importa. Usa **Ayuda > Enviar feedback…** o **Ayuda > Reportar un problema…**: se abre tu navegador con un formulario de GitHub ya rellenado con la versión y el sistema (sin rutas de archivos ni nombre de usuario) y, en el caso de un problema, el final del registro; revisa el texto y envíalo tú. **Ayuda > Copiar información del sistema** lo deja en el portapapeles.
+
+El registro (`film_poc.log`, rotativo, sin rutas completas) se guarda en la carpeta `logs` de la biblioteca local; **Ayuda > Abrir carpeta de registros** la abre:
+
+- macOS: `~/Library/Application Support/FilmPOC/logs`
+- Windows: `%LOCALAPPDATA%\FilmPOC\logs`
+- Linux: `~/.local/share/FilmPOC/logs`
+
+Privacidad: no hay telemetría ni código de red. La aplicación no envía nada; los menús solo abren tu navegador o copian texto.
+
+## Aviso
+
+Proyecto independiente, sin afiliación ni respaldo de Kodak, Fujifilm, Ilford u otras marcas citadas. Los nombres de películas se usan solo para describir qué se aproxima. Los looks son aproximaciones y no equivalen a los procesos originales. Todo se procesa en tu equipo; la aplicación no envía datos.
+
 ## Licencias
 
 Código combinado GPL-3.0-or-later; porciones adaptadas conservan sus atribuciones. LUT de película CC BY-SA 4.0 con avisos específicos. Consultar `LICENSE`, `THIRD_PARTY_NOTICES.md` y `film_poc/assets/film-stocks/ATTRIBUTION.md`. FujiLUT declara MIT en su README, sin aviso de copyright independiente en la revisión utilizada; esa declaración se conserva literalmente.
