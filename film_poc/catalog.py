@@ -39,7 +39,8 @@ def thumbnails(linear):
 def reference_thumbnails():
     """Load precomputed sample cards; independent of any imported user image."""
     folder=Path(__file__).parent/'assets'/'reference'
-    manifest=json.loads((folder/'manifest.json').read_text(encoding='utf-8')) if (folder/'manifest.json').exists() else {}
+    manifest_path=folder/'manifest.json'
+    manifest=json.loads(manifest_path.read_text(encoding='utf-8')) if manifest_path.exists() else {}
     reference=reference_linear()
     return {name: (np.asarray(Image.open(folder/manifest[name]).convert('RGB')).copy()
                    if name in manifest and (folder/manifest[name]).exists()
