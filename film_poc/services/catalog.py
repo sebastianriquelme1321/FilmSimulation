@@ -1,12 +1,11 @@
 """Presentation metadata and thumbnails for the extensible look registry."""
-import json
 from functools import lru_cache
-from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
 
-from .engine import LOOKS, apply_look, uint8
+from ..adapters import reference_files
+from ..core.render import LOOKS, apply_look, uint8
 
 
 def metadata(name):
@@ -38,26 +37,15 @@ def thumbnails(linear):
 @lru_cache(maxsize=1)
 def reference_thumbnails():
     """Load precomputed sample cards; independent of any imported user image."""
-    folder=Path(__file__).parent/'assets'/'reference'
-    manifest_path=folder/'manifest.json'
-    manifest=json.loads(manifest_path.read_text(encoding='utf-8')) if manifest_path.exists() else {}
+    cards=reference_files.load_sample_cards(tuple(LOOKS))
     reference=reference_linear()
-    return {name: (np.asarray(Image.open(folder/manifest[name]).convert('RGB')).copy()
-                   if name in manifest and (folder/manifest[name]).exists()
-                   else uint8(apply_look(reference,name))) for name in tuple(LOOKS)}
+    return {name: cards[name] if name in cards else uint8(apply_look(reference,name))
+            for name in tuple(LOOKS)}
 
 
 def reference_linear():
     """Illustrative code-generated chart when no local reference is installed."""
-    from .adapters.storage import library_dir
-    local=library_dir()/'reference.jpg'
-    image=None
-    if local.exists():
-        try:
-            image=Image.open(local).convert('RGB')
-            image.thumbnail((240,160))
-        except (OSError,ValueError):
-            image=None
+    image=reference_files.load_local_reference()
     if image is None:
         image=Image.new('RGB',(240,160),'#b5afa4')
         draw=ImageDraw.Draw(image)

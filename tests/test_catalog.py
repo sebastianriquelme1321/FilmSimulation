@@ -2,8 +2,8 @@ import os
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import numpy as np
 from PySide6.QtWidgets import QApplication
-from film_poc.catalog import metadata,filtered_names,origins,reference_thumbnails
-from film_poc.engine import LOOKS
+from film_poc.services.catalog import metadata,filtered_names,origins,reference_thumbnails
+from film_poc.core.render import LOOKS
 from film_poc.ui import Window
 
 

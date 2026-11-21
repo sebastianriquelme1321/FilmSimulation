@@ -1,5 +1,4 @@
 """Main window: top-level layout, signal wiring and background-job orchestration."""
-import json
 import struct
 import sys
 from pathlib import Path
@@ -25,19 +24,21 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from .. import user_library
-from ..backdrop import StudioBackdrop
-from ..catalog import metadata, origins, reference_linear, reference_thumbnails
 from ..core.grain import GRAIN
 from ..core.preview import PreviewPipeline
-from ..engine import LOOKS, apply_look, decode, edit_settings, export_jpeg, look_slug, uint8
-from ..raw_export import export_raw_bundle
+from ..core.render import LOOKS, apply_look, edit_settings, look_slug, uint8
+from ..services import library
+from ..services.catalog import metadata, origins, reference_linear, reference_thumbnails
+from ..services.develop import decode
+from ..services.export_bundle import export_raw_bundle
+from ..services.export_jpeg import export_jpeg
 from ..services.preferences import load_theme, save_theme
-from ..theme import DEFAULT_THEME, THEMES, stylesheet
 from .adjustments_panel import AdjustmentsPanel
+from .backdrop import StudioBackdrop
 from .gallery import Gallery
 from .images import pixmap
 from .jobs import make_job
+from .theme import DEFAULT_THEME, THEMES, stylesheet
 
 ALL_ORIGINS = 'Todos los orígenes'
 HINT = 'Un poco de nostalgia, en cada foto.'
@@ -49,7 +50,7 @@ class Window(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('FilmSimulation · Film studio')
-        user_library.load_library(LOOKS)
+        library.startup()
         reference_thumbnails.cache_clear()
         self.resize(1440, 900)
         self.setMinimumSize(940, 680)
@@ -362,7 +363,7 @@ class Window(QMainWindow):
         if not path:
             return
         try:
-            key = user_library.import_profile(Path(path), LOOKS)
+            key = library.import_profile(Path(path))
             reference_thumbnails.cache_clear()
             self.gallery.add_thumbnail(key, uint8(apply_look(reference_linear(), key)))
             self.origin.blockSignals(True)
@@ -396,9 +397,7 @@ class Window(QMainWindow):
                     'temperature': values['temperature'], 'grain': self.grain.currentText(),
                     'input_space': 'sRGB'}
             try:
-                user_library.validate_recipe(data, LOOKS)
-                Path(path).write_text(json.dumps(data, ensure_ascii=False, indent=2),
-                                      encoding='utf-8')
+                library.save_recipe(data, path)
                 self.status.setText('Receta guardada. Puedes compartir el JSON o añadirlo '
                                     'a tu biblioteca.')
             except (OSError, ValueError) as exc:

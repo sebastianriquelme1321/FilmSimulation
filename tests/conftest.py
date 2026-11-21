@@ -5,6 +5,12 @@ import pytest
 WAIT_SECONDS = 60
 
 
+@pytest.fixture(scope='session',autouse=True)
+def installed_adapters():
+    from film_poc.services.library import install
+    install()
+
+
 @pytest.fixture(autouse=True)
 def isolated_user_library(monkeypatch,tmp_path):
     monkeypatch.setenv('FILM_POC_USER_DIR',str(tmp_path/'library'))

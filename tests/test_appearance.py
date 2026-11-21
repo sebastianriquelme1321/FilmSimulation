@@ -1,8 +1,8 @@
 import json
 import numpy as np
 from film_poc.services import preferences
-from film_poc.theme import THEMES
-from film_poc.theme import DEFAULT_THEME
+from film_poc.ui.theme import THEMES
+from film_poc.ui.theme import DEFAULT_THEME
 
 
 def test_corrupt_or_unknown_theme_falls_back(tmp_path):

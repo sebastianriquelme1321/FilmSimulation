@@ -35,4 +35,4 @@ select = ["E", "F", "I", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "film_poc/core/profile_transforms.py" = ["E501", "E741"]
-"film_poc/theme.py" = ["E501"]
+"film_poc/ui/theme.py" = ["E501"]

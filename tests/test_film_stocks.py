@@ -2,7 +2,10 @@ import hashlib
 import numpy as np
 from PIL import Image
 from film_poc.adapters.hald_loader import load_hald
-from film_poc.film_stocks import STOCKS,ASSETS,apply
+from film_poc.adapters.film_stock_files import ASSETS,manifest
+from film_poc.core.looks.film_stock import apply
+
+STOCKS=manifest()
 
 
 def test_packaged_files_match_recorded_hashes():

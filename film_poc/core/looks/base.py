@@ -1,13 +1,11 @@
 """Look data model, backend protocol and the default registry.
 
-A backend is any object with ``apply(linear, look) -> display-encoded float32``
-and, optionally, ``bundle_files(look) -> list[Path]`` (extra files that must
-travel with a RAW archive). Each backend lives in its own module of this
-package and registers itself on import; see ``looks/__init__.py``.
+A backend is any object with ``apply(linear, look) -> display-encoded float32``. Each
+backend lives in its own module of this package and registers itself on import; see
+``looks/__init__.py``. Backends never read files: data comes through ``core.tables``.
 """
 from collections.abc import Iterator, MutableMapping
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Protocol
 
 import numpy as np
@@ -54,7 +52,6 @@ class Look:
 
 class LookBackend(Protocol):
     def apply(self, linear: np.ndarray, look: Look) -> np.ndarray: ...
-    # Optional: def bundle_files(self, look: Look) -> list[Path]
 
 
 class LookRegistry(MutableMapping):
@@ -72,10 +69,6 @@ class LookRegistry(MutableMapping):
             return self._backends[look.backend_id]
         except KeyError:
             raise ValueError(f'Backend de look desconocido: {look.backend_id}') from None
-
-    def bundle_files(self, look: Look) -> list[Path]:
-        hook = getattr(self.backend(look), 'bundle_files', None)
-        return hook(look) if hook else []
 
     def register(self, name: str, look: Look | dict) -> None:
         self[name] = look

@@ -5,7 +5,7 @@ import numpy as np
 from PySide6.QtWidgets import QApplication, QFileDialog
 from film_poc import ui
 from film_poc.ui.jobs import Job
-from film_poc.catalog import reference_linear
+from film_poc.services.catalog import reference_linear
 from film_poc.adapters.storage import library_dir
 
 

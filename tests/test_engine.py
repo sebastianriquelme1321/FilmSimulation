@@ -2,7 +2,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 from PIL import Image
-from film_poc.engine import LOOKS, apply_look, display_rgb, export_jpeg, decode
+from film_poc.core.looks.base import display_rgb
+from film_poc.core.render import LOOKS, apply_look
+from film_poc.services.develop import decode
+from film_poc.services.export_jpeg import export_jpeg
 
 
 def test_transfer():

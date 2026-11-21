@@ -1,20 +1,24 @@
-"""Non-destructive archive: untouched original ARW plus FilmSimulation settings."""
+"""Use case: non-destructive archive with the untouched original RAW plus the edit settings."""
 import hashlib
 import json
 import zipfile
 from pathlib import Path
 
-from .adapters.storage import atomic_path
-from .core.grain import GRAIN
-from .engine import LOOKS, PIPELINE_VERSION, edit_settings
-from .user_library import validate_recipe
+from .. import adapters
+from ..adapters import lut_files
+from ..adapters.storage import atomic_path
+from ..core import raw
+from ..core.grain import GRAIN
+from ..core.looks.recipe import validate_recipe
+from ..core.render import LOOKS, PIPELINE_VERSION, edit_settings
 
 
 def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
                       grain: str = 'Desactivado', **adjustments: float) -> None:
-    """Write a .zip with the untouched ARW, edit.recipe.json and export metadata."""
+    """Write a .zip with the untouched RAW, edit.recipe.json and export metadata."""
     source, destination = Path(source), Path(destination)
-    if source.suffix.lower() != '.arw' or not source.is_file():
+    adapters.load_decoders()
+    if not raw.is_supported(source) or not source.is_file():
         raise ValueError('Selecciona un archivo Sony ARW original existente.')
     if destination.suffix.lower() != '.zip':
         raise ValueError('RAW original + ajustes se guarda como archivo .zip.')
@@ -36,7 +40,9 @@ def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
                     digest.update(block)
                     target.write(block)
             profile = LOOKS[base]
-            for file in LOOKS.bundle_files(profile):
+            # Only imported LUTs live outside the app; they travel with the archive.
+            files = lut_files.bundle_files(profile['path']) if profile.backend == 'user-lut' else []
+            for file in files:
                 archive.write(file, 'library/' + file.name)
             archive.writestr('edit.recipe.json', json.dumps(recipe, ensure_ascii=False, indent=2))
             archive.writestr('export-info.json', json.dumps({

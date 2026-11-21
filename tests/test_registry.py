@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from film_poc import engine
-from film_poc.catalog import metadata
+from film_poc.core import render as engine
+from film_poc.services.catalog import metadata
 from film_poc.core.looks.base import Look, LookRegistry
 
 
@@ -41,6 +41,5 @@ def test_new_backend_needs_no_other_module_changes(fake):
     out = engine.apply_look(linear, fake)
     np.testing.assert_allclose(out, 1 - engine.render_base(linear), atol=1e-6)
     assert metadata(fake)['origin'] == 'Tests'
-    assert engine.LOOKS.bundle_files(engine.LOOKS[fake]) == []
     assert engine.look_slug(fake) == 'fake'
     engine.render_edit(linear, fake, exposure_ev=.5)

@@ -8,17 +8,16 @@ Uses SciPy's equivalent thin-plate spline with affine polynomial, evaluated
 through a cached display-sRGB LUT. It is not the complete darktable pipeline.
 """
 import hashlib
-import json
 from functools import lru_cache
-from pathlib import Path
 
 import numpy as np
 from scipy.interpolate import RBFInterpolator, RegularGridInterpolator
 
-from ..adapters.storage import cached_array
+from . import tables
 from .lut3d import apply_lut3d
 
-_DATA=Path(__file__).parents[1]/'assets'/'darktable'
+# Bump when the LUT construction below changes: it is part of the disk-cache key.
+LUT_VERSION = 'darktable-lut-1'
 NAME = 'Classic Chrome · darktable (experimental)'
 PRESETS = {'chrome': 'Classic Chrome', 'astia': 'Astia', 'mchrome': 'Monochrome',
            'provia': 'Provia', 'velvia': 'Velvia'}
@@ -52,8 +51,8 @@ def from_lab(lab):
 def patches(preset='chrome'):
     if preset not in PRESETS:
         raise ValueError(f'Unknown darktable preset: {preset}')
-    data=json.loads((_DATA/f'darktable_{preset}.json').read_text(encoding='utf-8'))
-    return np.array(data['source']),np.array(data['target'])
+    source,target=tables.load('darktable',preset)  # Lab patch pairs, supplied by an adapter
+    return np.asarray(source),np.asarray(target)
 
 
 @lru_cache(maxsize=5)
@@ -77,8 +76,9 @@ def lut(preset='chrome'):
         for i in range(len(axis)):
             values[i]=direct(grid[i],preset)
         return values
-    token=hashlib.sha256(Path(__file__).read_bytes()+(_DATA/f'darktable_{preset}.json').read_bytes()).hexdigest()
-    values=cached_array('darktable',token,build,(49,49,49,3))
+    source,target=patches(preset)
+    token=hashlib.sha256(LUT_VERSION.encode()+source.tobytes()+target.tobytes()).hexdigest()
+    values=tables.cached_array('darktable',token,build,(49,49,49,3))
     return RegularGridInterpolator((axis,axis,axis),values,bounds_error=True)
 
 

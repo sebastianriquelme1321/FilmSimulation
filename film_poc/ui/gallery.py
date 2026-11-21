@@ -3,9 +3,9 @@ from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QAbstractItemView, QComboBox, QListWidget, QListWidgetItem
 
-from ..catalog import filtered_names, metadata
-from ..engine import LOOKS
-from ..film_badge import add_canister
+from ..core.render import LOOKS
+from ..services.catalog import filtered_names, metadata
+from .film_badge import add_canister
 from .images import pixmap
 
 SHORT_ORIGINS = {'spektrafilm / Film Lab': 'spektrafilm', 'Pat David / HaldCLUT': 'Pat David'}

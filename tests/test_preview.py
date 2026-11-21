@@ -1,5 +1,5 @@
 import numpy as np
-from film_poc import engine
+from film_poc.core import render as engine
 from film_poc.core import adjustments
 from film_poc.core.preview import PreviewPipeline
 from film_poc.core.grain import apply_grain
