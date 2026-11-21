@@ -23,7 +23,7 @@ class Gallery(QListWidget):
         self.setMovement(QListWidget.Movement.Static)
         self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.setIconSize(QSize(140, 95))
-        self.setGridSize(QSize(154, 152))
+        self.setGridSize(QSize(154, 172))
         self.setWordWrap(True)
         self.setSpacing(3)
         self.setAccessibleName('Galería de simulaciones sobre una referencia fija')

@@ -34,7 +34,7 @@ from ..services.catalog import metadata, origins, reference_linear, reference_th
 from ..services.develop import decode, open_filter, supported_labels
 from ..services.export_bundle import export_raw_bundle
 from ..services.export_jpeg import export_jpeg
-from ..services.preferences import load_theme, save_theme
+from ..services.preferences import load_surround, load_theme, save_surround, save_theme
 from .adjustments_panel import AdjustmentsPanel
 from .backdrop import StudioBackdrop
 from .gallery import Gallery
@@ -128,6 +128,8 @@ class Window(QMainWindow):
         self.export_format.setToolTip('RAW: copia intacta del ARW y receta FilmSimulation; '
                                       'no incorpora el look en los datos RAW.')
         self.save_button.setObjectName('primary')
+        self.save_button.setToolTip(
+            f'Exportar ({QKeySequence("Ctrl+E").toString(QKeySequence.SequenceFormat.NativeText)})')
         self.save_button.setMinimumHeight(42)
         header.addWidget(self.open_button)
         header.addWidget(self.export_format)
@@ -228,7 +230,11 @@ class Window(QMainWindow):
         self.surround.addItems(list(SURROUNDS))
         self.surround.setAccessibleName('Fondo del visor')
         self.surround.setToolTip('Color neutro alrededor de la foto')
+        saved = load_surround(SURROUNDS, 'Gris')
+        self.surround.setCurrentText(saved)
+        self.viewer.set_surround(saved)
         self.surround.currentTextChanged.connect(self.viewer.set_surround)
+        self.surround.currentTextChanged.connect(self.remember_surround)
         bar.addWidget(self.surround)
         bar.addStretch()
         self.zoom_label = QLabel('100 %')
@@ -327,6 +333,7 @@ class Window(QMainWindow):
         self.recipe_button.clicked.connect(self.save_recipe)
         QShortcut(QKeySequence.StandardKey.Open, self, activated=self.open_raw)
         QShortcut(QKeySequence.StandardKey.SaveAs, self, activated=self.save)
+        QShortcut(QKeySequence('Ctrl+E'), self, activated=self.save)
         self.refresh_gallery()
         self.set_busy(False)
         self.theme_selector.currentIndexChanged.connect(self.change_theme)
@@ -354,6 +361,13 @@ class Window(QMainWindow):
             save_theme(theme, THEMES)
         except OSError:
             self.status.setText('Tema aplicado; no se pudo guardar la preferencia local.')
+
+    def remember_surround(self, name):
+        """Remember the viewer backdrop; a failed save is ignored."""
+        try:
+            save_surround(name, SURROUNDS)
+        except OSError:
+            pass
 
     # ---- gallery ------------------------------------------------------------------------
 
