@@ -102,6 +102,20 @@ def save_theme_name(theme: str) -> None:
     _save_appearance('theme', theme)
 
 
+def load_export_dir() -> Path | None:
+    """Return the last export folder if it was saved and still exists, else None."""
+    folder = _appearance().get('export_dir')
+    if not isinstance(folder, str) or not folder:
+        return None
+    path = Path(folder)
+    return path if path.is_dir() else None
+
+
+def save_export_dir(folder: str | Path) -> None:
+    """Persist the folder of the last export, keeping the other preferences."""
+    _save_appearance('export_dir', str(folder))
+
+
 def load_surround_name() -> str | None:
     """Return the saved viewer backdrop name string, or None if missing or unreadable."""
     surround = _appearance().get('surround')

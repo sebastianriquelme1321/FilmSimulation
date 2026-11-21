@@ -30,7 +30,7 @@ macOS necesita versión 14 o posterior. Intel usa rawpy 0.25.1 y Apple Silicon 0
 1. Importa un RAW (botón **Importar RAW** o arrastrar y soltar un `.ARW` sobre la ventana).
 2. Elige una película en la columna izquierda: clic en la tarjeta o Enter. Recorrer con las flechas no la aplica.
 3. Ajusta exposición, temperatura, contraste, saturación, tinte, intensidad y grano en la columna derecha. **Restablecer ajustes** vuelve todo a neutro (mantiene película y grano).
-4. Exporta con el selector y el botón **Exportar**.
+4. Exporta con el selector y el botón **Exportar**. El diálogo propone la carpeta de la última exportación (o, la primera vez, la de la foto) y puedes elegir otra; la elección se recuerda.
 
 **Visor.** Botones **Dividido**, **Antes** y **Después**; el selector **Fondo** cambia el color neutro alrededor de la foto (Gris, Negro, Blanco) y se recuerda al reabrir la aplicación.
 

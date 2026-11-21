@@ -44,7 +44,14 @@ from ..services.diagnostics import (
 )
 from ..services.export_bundle import export_raw_bundle
 from ..services.export_jpeg import export_jpeg
-from ..services.preferences import load_surround, load_theme, save_surround, save_theme
+from ..services.preferences import (
+    load_export_dir,
+    load_surround,
+    load_theme,
+    save_export_dir,
+    save_surround,
+    save_theme,
+)
 from .about import AboutDialog
 from .adjustments_panel import AdjustmentsPanel
 from .backdrop import StudioBackdrop
@@ -715,7 +722,8 @@ class Window(QMainWindow):
         grain_tag = '' if grain == 'Desactivado' else '_grano_' + grain.lower()
         raw = self.export_format.currentIndex() == 1
         suffix = '.zip' if raw else '.jpg'
-        default = self.source.with_name(self.source.stem + f'_{tag}{grain_tag}' + suffix)
+        folder = load_export_dir() or self.source.parent  # last export folder, if still there
+        default = folder / (self.source.stem + f'_{tag}{grain_tag}' + suffix)
         title = 'RAW original + ajustes (sin look incorporado)' if raw else 'Exportar JPEG'
         formats = 'RAW original y receta (*.zip)' if raw else 'JPEG (*.jpg *.jpeg)'
         path, _ = QFileDialog.getSaveFileName(self, title, str(default), formats)
@@ -735,6 +743,10 @@ class Window(QMainWindow):
                 message = 'Exportando resolución completa…'
             def exported(_):
                 self.status.setText(f'Exportado: {destination}')
+                try:
+                    save_export_dir(destination.parent)
+                except OSError:
+                    pass  # the preference is a convenience
                 log.info('Export done: %s (%s)', destination.name, 'RAW+receta' if raw else 'JPEG')
             self.run_job(operation, exported, message)
 
