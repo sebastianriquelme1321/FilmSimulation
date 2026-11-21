@@ -15,12 +15,15 @@ log = logging.getLogger(__name__)
 
 @lru_cache(maxsize=1)
 def manifest() -> dict:
-    """The stock manifest; empty (and logged) when the assets are missing or unreadable."""
+    """The stock manifest. A missing or corrupt bundle is a packaging bug: fail loudly.
+
+    Exceptions are not cached by lru_cache, so a later call retries."""
     try:
         return json.loads((ASSETS/'manifest.json').read_text(encoding='utf-8'))
-    except (OSError, ValueError):
-        log.warning('Film stock manifest unavailable: %s', ASSETS/'manifest.json')
-        return {}
+    except (OSError, ValueError) as exc:
+        log.error('Film stock manifest unavailable: %s', ASSETS/'manifest.json')
+        raise RuntimeError(f'Faltan los recursos de películas ({ASSETS/"manifest.json"}): '
+                           'reinstala la aplicación.') from exc
 
 
 def load_cube(stock: str):

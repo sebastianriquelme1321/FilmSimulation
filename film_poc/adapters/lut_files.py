@@ -3,6 +3,7 @@ import hashlib
 import json
 import shutil
 import struct
+import zlib
 from pathlib import Path
 from typing import NamedTuple
 
@@ -67,7 +68,10 @@ def read_table(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     width, height = struct.unpack('>II', header[16:24])
     if width != height or not 8 <= width <= 512:
         raise ValueError('Se admiten HaldCLUT cuadrados de nivel 2 a 8, no fotografías PNG.')
-    return load_hald(path), np.zeros(3), np.ones(3)
+    try:
+        return load_hald(path), np.zeros(3), np.ones(3)
+    except (zlib.error, IndexError, struct.error, EOFError) as exc:
+        raise ValueError('El PNG está dañado o truncado.') from exc
 
 
 def register() -> None:

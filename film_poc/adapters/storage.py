@@ -6,6 +6,7 @@ import sys
 import tempfile
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager, suppress
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -22,15 +23,27 @@ def library_dir() -> Path:
     return Path(os.environ.get('XDG_DATA_HOME', Path.home()/'.local'/'share'))/'FilmPOC'
 
 
+@lru_cache(maxsize=1)
+def _default_mode() -> int:
+    """File mode a plain open() would create (0o666 minus the umask)."""
+    mask = os.umask(0)
+    os.umask(mask)
+    return 0o666 & ~mask
+
+
 @contextmanager
 def atomic_path(destination: str | Path, suffix: str = '.tmp') -> Iterator[Path]:
-    """Yield a temp path beside destination; os.replace it on success, always clean up."""
+    """Yield a temp path beside destination; os.replace it on success, always clean up.
+
+    mkstemp creates 0600 files; the result gets the mode a normal write would have."""
     destination = Path(destination)
     fd, name = tempfile.mkstemp(suffix=suffix, dir=destination.parent)
     os.close(fd)
     temporary = Path(name)
     try:
         yield temporary
+        with suppress(OSError):
+            os.chmod(temporary, _default_mode())
         os.replace(temporary, destination)
     finally:
         with suppress(OSError):

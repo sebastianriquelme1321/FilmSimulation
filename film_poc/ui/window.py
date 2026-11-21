@@ -50,7 +50,7 @@ class Window(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('FilmSimulation · Film studio')
-        library.startup()
+        startup_warnings = library.startup()
         reference_thumbnails.cache_clear()
         self.resize(1440, 900)
         self.setMinimumSize(940, 680)
@@ -91,6 +91,10 @@ class Window(QMainWindow):
         self._build_footer(layout)
         self.setCentralWidget(root)
         self._connect_signals()
+        if startup_warnings:
+            self.status.setText(f'{len(startup_warnings)} entrada(s) de tu biblioteca no se '
+                                'pudieron cargar.')
+            self.status.setToolTip('\n'.join(startup_warnings))
 
     # ---- layout -------------------------------------------------------------------------
 

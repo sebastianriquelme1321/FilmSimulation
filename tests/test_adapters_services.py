@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import zipfile
@@ -9,6 +10,7 @@ import numpy as np
 import pytest
 
 import film_poc.adapters as adapters
+from film_poc.adapters import film_stock_files, lut_files
 from film_poc.adapters.storage import atomic_path, cached_array, library_dir
 from film_poc.core import raw
 from film_poc.core import render as engine
@@ -103,6 +105,36 @@ def test_atomic_path_success_replaces(tmp_path):
     with atomic_path(destination) as temporary:
         temporary.write_text('new')
     assert destination.read_text() == 'new' and list(tmp_path.iterdir()) == [destination]
+
+
+@pytest.mark.skipif(sys.platform == 'win32', reason='POSIX permission bits')
+def test_atomic_path_uses_umask_mode_not_mkstemp_0600(tmp_path):
+    mask = os.umask(0)
+    os.umask(mask)
+    destination = tmp_path/'recipe.json'
+    with atomic_path(destination) as temporary:
+        temporary.write_text('{}')
+    assert destination.stat().st_mode & 0o777 == 0o666 & ~mask
+
+
+def test_truncated_hald_png_is_a_value_error(tmp_path):
+    stock = next(film_stock_files.ASSETS.glob('*.png')).read_bytes()
+    broken = tmp_path/'broken.png'
+    broken.write_bytes(stock[:len(stock)//2])
+    with pytest.raises(ValueError):
+        lut_files.read_table(broken)
+
+
+def test_missing_film_stock_manifest_fails_loudly_and_retries(tmp_path, monkeypatch):
+    monkeypatch.setattr(film_stock_files, 'ASSETS', tmp_path)
+    film_stock_files.manifest.cache_clear()
+    try:
+        with pytest.raises(RuntimeError):
+            film_stock_files.manifest()
+        (tmp_path/'manifest.json').write_text('{}')
+        assert film_stock_files.manifest() == {}  # the failure was not cached
+    finally:
+        film_stock_files.manifest.cache_clear()
 
 
 def test_cached_array_corrupt_and_shape_mismatch():
