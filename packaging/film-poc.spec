@@ -9,11 +9,9 @@ ROOT = Path(SPECPATH).parent
 IS_MAC = sys.platform == 'darwin'
 
 # Package-layout independent: everything under film_poc is collected.
+# collect_submodules also pulls adapters/*_decoder.py, which are imported dynamically.
 hiddenimports = collect_submodules('film_poc') + ['rawpy', 'scipy.interpolate']
-datas = collect_data_files('film_poc')  # assets/**, darktable_*.json, ...
-# Some modules read their own source (e.g. darktable_look.py hashes __file__ for its cache
-# key), so ship the .py sources next to the compiled modules.
-datas += collect_data_files('film_poc', include_py_files=True, excludes=['**/__pycache__'])
+datas = collect_data_files('film_poc')  # assets/** (film stocks, darktable patches, ...)
 
 EXCLUDES = [
     # unittest/doctest/pydoc are needed by numpy.testing and scipy: do not exclude.

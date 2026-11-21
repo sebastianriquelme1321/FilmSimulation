@@ -36,3 +36,10 @@ def test_theme_switch_persists_without_reprocessing(tmp_path,wait_window):
     reopened.theme_selector.setCurrentIndex(0)
     assert preferences.load_theme(THEMES,DEFAULT_THEME)=='darkroom'
     reopened.close()
+
+
+def test_stylesheet_assets_exist():
+    from pathlib import Path
+    from film_poc.ui.theme import stylesheet
+    for theme in THEMES:
+        assert Path(stylesheet(theme).split('url(')[1].split(')')[0]).is_file()

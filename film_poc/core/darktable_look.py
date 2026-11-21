@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Adapted from darktable src/iop/colorchecker.c.
 # Copyright (C) 2016-2026 darktable developers.
-# Distributed without warranty; see ../LICENSE and THIRD_PARTY_NOTICES.md.
+# Distributed without warranty; see ../../LICENSE and THIRD_PARTY_NOTICES.md.
 """Experimental port of the Classic Chrome Lab patch mapping.
 
 Uses SciPy's equivalent thin-plate spline with affine polynomial, evaluated

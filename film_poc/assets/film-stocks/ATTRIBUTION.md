@@ -16,6 +16,6 @@ Author attribution: Pat David, as documented by the repository for Negative (new
 
 ## Loader code
 
-`../../hald_loader.py` contains selected read-only loading functions from Film Lab, copyright (c) 2026 Mark Koellmann, MIT license retained in FILM_LAB_CODE_LICENSE.txt. Functions extracted from filmlab/lut.py at the Film Lab revision above, with local imports/header; no interpolation/effects/server copied. Application interpolation uses SciPy trilinear evaluation, so results may differ slightly from Film Lab's tetrahedral interpolation.
+`../../adapters/hald_loader.py` contains selected read-only loading functions from Film Lab, copyright (c) 2026 Mark Koellmann, MIT license retained in FILM_LAB_CODE_LICENSE.txt. Functions extracted from filmlab/lut.py at the Film Lab revision above, with local imports/header; no interpolation/effects/server copied. Application interpolation uses SciPy trilinear evaluation, so results may differ slightly from Film Lab's tetrahedral interpolation.
 
 `manifest.json` records original filenames and SHA-256 checksums. No LUT assets were downsampled, recolored or regenerated. 16-bit PNGs are decoded at 16-bit precision into the runtime cube; Gold's original asset is 8-bit.

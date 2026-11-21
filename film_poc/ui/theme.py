@@ -18,7 +18,7 @@ def stylesheet(theme):
                 primary='#F7F7F5' if glass else '#F28C38',
                 primary_hover='#FFFFFF' if glass else '#FF9C49',
                 title_font='Georgia' if glass else 'Segoe UI',
-                chevron=(Path(__file__).parent/'assets'/'icons'/'chevron.svg').as_posix())
+                chevron=(Path(__file__).parents[1]/'assets'/'icons'/'chevron.svg').as_posix())
     return Template(_CSS).substitute(colors)
 
 

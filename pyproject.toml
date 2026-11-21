@@ -21,7 +21,7 @@ film-poc = "film_poc.ui:main"
 include = ["film_poc*"]
 
 [tool.setuptools.package-data]
-film_poc = ["*.json", "assets/**/*"]
+film_poc = ["assets/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
