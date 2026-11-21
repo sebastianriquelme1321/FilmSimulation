@@ -30,7 +30,8 @@ def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
     recipe = {'version': 1, 'name': LOOKS[name].display_name + ' · edición',
               'base_look': base, 'input_space': 'sRGB', 'grain': grain,
               'strength': settings['intensity'], 'exposure_ev': settings['exposure_ev'],
-              'temperature': settings['temperature']}
+              'temperature': settings['temperature'], 'contrast': settings['contrast'],
+              'saturation': settings['saturation'], 'tint': settings['tint']}
     validate_recipe(recipe, LOOKS)
     with atomic_path(destination, '.zip') as temporary:
         with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_DEFLATED) as archive:

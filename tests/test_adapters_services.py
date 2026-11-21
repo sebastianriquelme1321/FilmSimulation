@@ -80,7 +80,8 @@ def test_save_recipe_round_trip_and_invalid(tmp_path):
     key = library.import_profile(path)
     try:
         assert engine.edit_settings(key) == (name, {'exposure_ev': .5, 'temperature': 20,
-                                                    'intensity': .5})
+                                                    'intensity': .5, 'contrast': 0,
+                                                    'saturation': 0, 'tint': 0})
     finally:
         engine.LOOKS.pop(key)
     bad = tmp_path/'bad.json'

@@ -35,23 +35,32 @@ class EditSettings(NamedTuple):
 
 
 def edit_settings(name: str, exposure_ev: float | None = None, temperature: float | None = None,
-                  intensity: float | None = None) -> EditSettings:
+                  intensity: float | None = None, *, contrast: float | None = None,
+                  saturation: float | None = None, tint: float | None = None) -> EditSettings:
     """Resolve and validate edit values (recipe defaults fill in omitted ones)."""
     look = LOOKS[name]
     recipe = look.params['recipe'] if look.backend == 'recipe' else {}
     values = {'exposure_ev': recipe.get('exposure_ev', 0) if exposure_ev is None else exposure_ev,
               'temperature': recipe.get('temperature', 0) if temperature is None else temperature,
-              'intensity': recipe.get('strength', 1) if intensity is None else intensity}
+              'intensity': recipe.get('strength', 1) if intensity is None else intensity,
+              'contrast': recipe.get('contrast', 0) if contrast is None else contrast,
+              'saturation': recipe.get('saturation', 0) if saturation is None else saturation,
+              'tint': recipe.get('tint', 0) if tint is None else tint}
     adjustments.validate(**values)
     return EditSettings(recipe.get('base_look', name), values)
 
 
 def render_edit(linear: np.ndarray, name: str, exposure_ev: float | None = None,
                 temperature: float | None = None,
-                intensity: float | None = None) -> tuple[np.ndarray, np.ndarray]:
+                intensity: float | None = None, *, contrast: float | None = None,
+                saturation: float | None = None,
+                tint: float | None = None) -> tuple[np.ndarray, np.ndarray]:
     """Return adjusted base and mixed look; both display-encoded sRGB, no grain."""
-    base_name, settings = edit_settings(name, exposure_ev, temperature, intensity)
-    corrected = adjustments.apply_base(linear, settings['exposure_ev'], settings['temperature'])
+    base_name, settings = edit_settings(name, exposure_ev, temperature, intensity,
+                                        contrast=contrast, saturation=saturation, tint=tint)
+    corrected = adjustments.apply_base(
+        linear, settings['exposure_ev'], settings['temperature'],
+        settings['contrast'], settings['saturation'], settings['tint'])
     before = render_base(corrected)
     amount = settings['intensity']
     if amount == 0:
