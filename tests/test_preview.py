@@ -47,13 +47,13 @@ def test_latest_preview_wins_without_blocking_ui(tmp_path,monkeypatch,wait_windo
         pixels=np.full(source.shape,round(values['intensity']*255),dtype=np.uint8)
         return pixels,pixels
     monkeypatch.setattr(window.preview_pipeline,'render',slow)
-    window.loaded((tmp_path/'input.arw',np.full((20,30,3),.1,dtype=np.float32)))
+    window.loaded(tmp_path/'input.arw',np.full((20,30,3),.1,dtype=np.float32))
     assert entered.wait(3)
     for value in (20,30,40):
-        window.intensity.setValue(value)
+        window.adjustments.intensity.setValue(value)
         window.render()
     # The blocked worker has not prevented UI selection or queued 3 jobs.
-    assert window.intensity.value()==40 and len(calls)==1
+    assert window.adjustments.intensity.value()==40 and len(calls)==1
     release.set()
     wait_window(window)
     assert calls==[1,.4]
@@ -81,7 +81,7 @@ def test_browsing_filters_does_not_apply_any_look(tmp_path,wait_window):
     from film_poc.ui import Window
     app=QApplication.instance() or QApplication([])
     window=Window()
-    window.loaded((tmp_path/'test.arw',np.full((20,30,3),.1,dtype=np.float32)))
+    window.loaded(tmp_path/'test.arw',np.full((20,30,3),.1,dtype=np.float32))
     wait_window(window)
     revision=window.preview_revision
     assert window.active_look is None and window.pixmaps[1] is None

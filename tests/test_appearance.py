@@ -15,8 +15,8 @@ def test_corrupt_or_unknown_theme_falls_back(tmp_path):
 def test_theme_switch_persists_without_reprocessing(tmp_path,wait_window):
     from film_poc.ui import Window
     window=Window()
-    window.look.setCurrentIndex(0)
-    window.loaded((tmp_path/'test.arw',np.full((30,50,3),.2,dtype=np.float32)))
+    window.gallery.look.setCurrentIndex(0)
+    window.loaded(tmp_path/'test.arw',np.full((30,50,3),.2,dtype=np.float32))
     wait_window(window)
     revision=window.preview_revision
     pixels=[image.toImage() for image in window.pixmaps]
