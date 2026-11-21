@@ -1,11 +1,14 @@
 """Display-sRGB film stock LUTs; data licensing is separate from code."""
+import json
 from functools import lru_cache
 from pathlib import Path
-import json
+
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-from .hald_loader import load_hald
+
 from .cache import cached_array
+from .hald_loader import load_hald
+from .lut3d import apply_lut3d
 
 ASSETS = Path(__file__).parent/'assets'/'film-stocks'
 STOCKS = json.loads((ASSETS/'manifest.json').read_text(encoding='utf-8'))
@@ -22,4 +25,4 @@ def table(stock):
 
 
 def apply(rgb,stock):
-    return np.clip(table(stock)(np.clip(rgb,0,1).reshape(-1,3)).reshape(rgb.shape),0,1).astype(np.float32)
+    return apply_lut3d(rgb,table(stock))

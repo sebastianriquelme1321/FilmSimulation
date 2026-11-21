@@ -1,21 +1,26 @@
 """Local-only community LUT and recipe library. Never executes imported content."""
-from pathlib import Path
-from functools import lru_cache
 import hashlib
 import json
 import os
-import re
 import shutil
-import sys
 import struct
+import sys
+from functools import lru_cache
+from pathlib import Path
+
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
+
+from .fileio import atomic_path
+from .grain import GRAIN
 from .hald_loader import load_hald
+from .lut3d import apply_lut3d
 
 MAX_BYTES=16*1024*1024
 
 
-def library_dir():
+def library_dir() -> Path:
+    """Return the per-user FilmPOC data directory (FILM_POC_USER_DIR overrides)."""
     if os.environ.get('FILM_POC_USER_DIR'):
         return Path(os.environ['FILM_POC_USER_DIR'])
     if sys.platform=='darwin':
@@ -25,7 +30,8 @@ def library_dir():
     return Path(os.environ.get('XDG_DATA_HOME',Path.home()/'.local'/'share'))/'FilmPOC'
 
 
-def read_cube(path):
+def read_cube(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Parse a 3D .cube file into (cube, domain_min, domain_max)."""
     size=None
     rows=[]
     low=np.zeros(3)
@@ -50,8 +56,10 @@ def read_cube(path):
             values=np.array([float(x) for x in parts[1:]])
             if values.shape!=(3,):
                 raise ValueError('Dominio de LUT inválido.')
-            if key=='DOMAIN_MIN': low=values
-            else: high=values
+            if key=='DOMAIN_MIN':
+                low=values
+            else:
+                high=values
         else:
             if size is None or len(parts)!=3 or len(rows)>=size**3:
                 raise ValueError('La LUT tiene datos o un número de filas inválidos.')
@@ -64,7 +72,8 @@ def read_cube(path):
     return cube,low,high
 
 
-def read_table(path):
+def read_table(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Read a .cube or HaldCLUT .png into (cube, domain_min, domain_max)."""
     if path.suffix.lower()=='.cube':
         return read_cube(path)
     header=path.read_bytes()[:29]
@@ -83,13 +92,14 @@ def _table(path):
     return RegularGridInterpolator((axis,axis,axis),cube,bounds_error=True),low,high
 
 
-def apply(rgb,profile):
+def apply(rgb: np.ndarray, profile: dict) -> np.ndarray:
+    """Apply an imported LUT profile to display-sRGB rgb."""
     table,low,high=_table(profile['path'])
-    coordinates=np.clip((rgb-low)/(high-low),0,1)
-    return np.clip(table(coordinates.reshape(-1,3)).reshape(rgb.shape),0,1).astype(np.float32)
+    return apply_lut3d((rgb-low)/(high-low),table)
 
 
-def validate_recipe(data,registry):
+def validate_recipe(data: dict, registry: dict) -> dict:
+    """Return data if it is a valid version-1 recipe against registry, else raise ValueError."""
     allowed={'version','name','author','source','license','base_look','strength','grain','input_space','exposure_ev','temperature'}
     if not isinstance(data,dict) or set(data)-allowed or data.get('version')!=1:
         raise ValueError('Receta no compatible. Usa el formato JSON de Film POC versión 1.')
@@ -104,7 +114,7 @@ def validate_recipe(data,registry):
     strength=data.get('strength',1.0)
     if isinstance(strength,bool) or not isinstance(strength,(float,int)) or not 0<=strength<=1:
         raise ValueError('La intensidad debe estar entre 0 y 1.')
-    if data.get('grain','Desactivado') not in ('Desactivado','Suave','Fuerte'):
+    if data.get('grain','Desactivado') not in GRAIN:
         raise ValueError('Grano de receta inválido.')
     if not isinstance(data.get('name'),str) or not data['name'].strip():
         raise ValueError('La receta necesita un nombre.')
@@ -114,15 +124,19 @@ def validate_recipe(data,registry):
 
 
 def _profile(entry,root):
-    details=' · '.join(x for x in (entry.get('author'),entry.get('license'),'Entrada sRGB · importado localmente') if x)
+    parts=(entry.get('author'),entry.get('license'),'Entrada sRGB · importado localmente')
+    details=' · '.join(x for x in parts if x)
     p={'display_name':entry['name'],'origin':'Comunidad / local','detail':details,
        'backend':entry['backend'],'source':entry.get('source','')}
-    if p['backend']=='recipe': p['recipe']=entry['recipe']
-    else: p['path']=str(root/entry['file'])
+    if p['backend']=='recipe':
+        p['recipe']=entry['recipe']
+    else:
+        p['path']=str(root/entry['file'])
     return p
 
 
-def import_profile(path,registry):
+def import_profile(path: str | Path, registry: dict) -> str:
+    """Validate and copy a LUT/recipe into the library; register it and return its key."""
     path=Path(path)
     if path.suffix.lower() not in ('.cube','.png','.json') or path.stat().st_size>MAX_BYTES:
         raise ValueError('Importa una LUT .cube, HaldCLUT .png o receta .json de hasta 16 MB.')
@@ -139,15 +153,16 @@ def import_profile(path,registry):
         read_table(path)  # Validate before copying into the library.
     key=f"{entry['name']} · local {digest[:8]}"
     root.mkdir(parents=True,exist_ok=True)
-    if entry['backend']=='user-lut': shutil.copyfile(path,root/entry['file'])
-    temporary=root/(digest+'.tmp')
-    temporary.write_text(json.dumps(entry,ensure_ascii=False,indent=2),encoding='utf-8')
-    temporary.replace(root/(digest+'.entry.json'))
+    if entry['backend']=='user-lut':
+        shutil.copyfile(path,root/entry['file'])
+    with atomic_path(root/(digest+'.entry.json')) as temporary:
+        temporary.write_text(json.dumps(entry,ensure_ascii=False,indent=2),encoding='utf-8')
     registry[key]=_profile(entry,root)
     return key
 
 
-def load_library(registry):
+def load_library(registry: dict) -> list[str]:
+    """Register all valid library entries; return file names that failed to load."""
     warnings=[]
     root=library_dir()
     files=sorted(root.glob('*.entry.json'))
@@ -156,17 +171,24 @@ def load_library(registry):
     for path in files:
         try:
             entry=json.loads(path.read_text(encoding='utf-8'))
-            if not isinstance(entry,dict): raise ValueError('Entrada inválida')
+            if not isinstance(entry,dict):
+                raise ValueError('Entrada inválida')
             entries.append((path,entry))
-        except (OSError,ValueError): warnings.append(path.name)
+        except (OSError,ValueError):
+            warnings.append(path.name)
     for path,entry in sorted(entries,key=lambda pair:pair[1].get('backend')=='recipe'):
         try:
-            if entry['backend']=='recipe': validate_recipe(entry['recipe'],registry)
+            if entry['backend']=='recipe':
+                validate_recipe(entry['recipe'],registry)
             elif entry['backend']=='user-lut':
-                if Path(entry['file']).name!=entry['file']: raise ValueError('Ruta inválida')
-                if not (root/entry['file']).is_file(): raise ValueError('LUT no encontrada')
-            else: raise ValueError('Tipo desconocido')
+                if Path(entry['file']).name!=entry['file']:
+                    raise ValueError('Ruta inválida')
+                if not (root/entry['file']).is_file():
+                    raise ValueError('LUT no encontrada')
+            else:
+                raise ValueError('Tipo desconocido')
             key=f"{entry['name']} · local {path.name[:8]}"
             registry[key]=_profile(entry,root)
-        except (KeyError,TypeError,OSError,ValueError): warnings.append(path.name)
+        except (KeyError,TypeError,OSError,ValueError):
+            warnings.append(path.name)
     return warnings

@@ -1,6 +1,6 @@
 """Original vector illustration for catalog cards; no product photos/logos."""
-from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import QPainter, QColor, QFont, QPen
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QColor, QFont, QPainter, QPen
 
 
 def add_canister(pixmap, label):

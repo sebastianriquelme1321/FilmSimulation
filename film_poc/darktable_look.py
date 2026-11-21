@@ -7,13 +7,16 @@
 Uses SciPy's equivalent thin-plate spline with affine polynomial, evaluated
 through a cached display-sRGB LUT. It is not the complete darktable pipeline.
 """
-from functools import lru_cache
+import hashlib
 import json
+from functools import lru_cache
 from pathlib import Path
+
 import numpy as np
 from scipy.interpolate import RBFInterpolator, RegularGridInterpolator
+
 from .cache import cached_array
-import hashlib
+from .lut3d import apply_lut3d
 
 NAME = 'Classic Chrome · darktable (experimental)'
 PRESETS = {'chrome': 'Classic Chrome', 'astia': 'Astia', 'mchrome': 'Monochrome',
@@ -79,4 +82,4 @@ def lut(preset='chrome'):
 
 
 def apply(rgb, preset='chrome'):
-    return np.clip(lut(preset)(np.clip(rgb,0,1).reshape(-1,3)).reshape(rgb.shape),0,1).astype(np.float32)
+    return apply_lut3d(rgb,lut(preset))
