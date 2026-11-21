@@ -63,7 +63,7 @@ def test_latest_preview_wins_without_blocking_ui(tmp_path,monkeypatch,wait_windo
 
 
 def test_bad_disk_cache_is_rebuilt(tmp_path):
-    from film_poc.cache import cached_array
+    from film_poc.adapters.storage import cached_array
     calls=[]
     def build():
         calls.append(1)

@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from ... import user_library
+from ...adapters.storage import library_dir
 from .base import display_rgb, registry
 
 
@@ -14,7 +15,7 @@ class UserLutBackend:
     def bundle_files(self, look) -> list[Path]:
         """The LUT and its library entry, so a RAW archive can restore the look."""
         lut = Path(look['path'])
-        entry = user_library.library_dir() / (lut.stem + '.entry.json')
+        entry = library_dir() / (lut.stem + '.entry.json')
         if not entry.is_file():
             raise ValueError('Falta la información local de la LUT para conservar la receta.')
         return [lut, entry]

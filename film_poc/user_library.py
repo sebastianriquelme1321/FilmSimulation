@@ -1,33 +1,20 @@
 """Local-only community LUT and recipe library. Never executes imported content."""
 import hashlib
 import json
-import os
 import shutil
 import struct
-import sys
 from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
+from .adapters.hald_loader import load_hald
+from .adapters.storage import atomic_path, library_dir
 from .core.grain import GRAIN
 from .core.lut3d import apply_lut3d
-from .fileio import atomic_path
-from .hald_loader import load_hald
 
 MAX_BYTES=16*1024*1024
-
-
-def library_dir() -> Path:
-    """Return the per-user FilmPOC data directory (FILM_POC_USER_DIR overrides)."""
-    if os.environ.get('FILM_POC_USER_DIR'):
-        return Path(os.environ['FILM_POC_USER_DIR'])
-    if sys.platform=='darwin':
-        return Path.home()/'Library'/'Application Support'/'FilmPOC'
-    if sys.platform=='win32':
-        return Path(os.environ.get('LOCALAPPDATA',Path.home()/'AppData'/'Local'))/'FilmPOC'
-    return Path(os.environ.get('XDG_DATA_HOME',Path.home()/'.local'/'share'))/'FilmPOC'
 
 
 def read_cube(path: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray]:

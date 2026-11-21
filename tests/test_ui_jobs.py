@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication, QFileDialog
 from film_poc import ui
 from film_poc.ui.jobs import Job
 from film_poc.catalog import reference_linear
-from film_poc.user_library import library_dir
+from film_poc.adapters.storage import library_dir
 
 
 def test_busy_window_ignores_open_save_import_and_render(tmp_path,monkeypatch,wait_window):

@@ -8,12 +8,12 @@ import rawpy
 from PIL import Image, ImageCms
 from scipy.interpolate import PchipInterpolator
 
+from .adapters.storage import atomic_path
 from .core import adjustments
 from .core.constants import JPEG_QUALITY, REC709_LUMA_F32, STRIP_ROWS
 from .core.grain import apply_grain
 from .core.looks import registry
 from .core.looks.base import display_rgb
-from .fileio import atomic_path
 
 LOOKS = registry
 PIPELINE_VERSION = 'v4.1-base-adjustments-mix'

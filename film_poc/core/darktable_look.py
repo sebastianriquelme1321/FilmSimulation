@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 from scipy.interpolate import RBFInterpolator, RegularGridInterpolator
 
-from ..cache import cached_array
+from ..adapters.storage import cached_array
 from .lut3d import apply_lut3d
 
 _DATA=Path(__file__).parents[1]/'assets'/'darktable'

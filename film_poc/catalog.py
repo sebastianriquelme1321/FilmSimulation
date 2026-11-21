@@ -49,7 +49,7 @@ def reference_thumbnails():
 
 def reference_linear():
     """Illustrative code-generated chart when no local reference is installed."""
-    from .user_library import library_dir
+    from .adapters.storage import library_dir
     local=library_dir()/'reference.jpg'
     image=None
     if local.exists():

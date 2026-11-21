@@ -31,9 +31,9 @@ from ..catalog import metadata, origins, reference_linear, reference_thumbnails
 from ..core.grain import GRAIN
 from ..core.preview import PreviewPipeline
 from ..engine import LOOKS, apply_look, decode, edit_settings, export_jpeg, look_slug, uint8
-from ..preferences import load_theme, save_theme
 from ..raw_export import export_raw_bundle
-from ..theme import THEMES, stylesheet
+from ..services.preferences import load_theme, save_theme
+from ..theme import DEFAULT_THEME, THEMES, stylesheet
 from .adjustments_panel import AdjustmentsPanel
 from .gallery import Gallery
 from .images import pixmap
@@ -71,7 +71,7 @@ class Window(QMainWindow):
         self.render_timer.setSingleShot(True)
         self.render_timer.setInterval(75)
         self.render_timer.timeout.connect(self.render)
-        self.theme_name = load_theme()
+        self.theme_name = load_theme(THEMES, DEFAULT_THEME)
         root = StudioBackdrop(self.theme_name)
         self.backdrop = root
         root.setObjectName('root')
@@ -292,7 +292,7 @@ class Window(QMainWindow):
         theme = self.theme_selector.currentData()
         self.apply_theme(theme)
         try:
-            save_theme(theme)
+            save_theme(theme, THEMES)
         except OSError:
             self.status.setText('Tema aplicado; no se pudo guardar la preferencia local.')
 

@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pytest
 from film_poc import user_library
+from film_poc.adapters.storage import library_dir
 
 
 def identity_cube(path):
@@ -21,7 +22,7 @@ def test_cube_axis_order_and_library_round_trip(tmp_path):
     restored={}
     assert user_library.load_library(restored)==[]
     assert name in restored
-    assert Path(restored[name]['path']).parent==user_library.library_dir()
+    assert Path(restored[name]['path']).parent==library_dir()
 
 
 def test_reject_incomplete_nonfinite_and_1d_cube(tmp_path):
@@ -35,7 +36,7 @@ def test_invalid_recipe_and_damaged_entry_do_not_load(tmp_path):
     path=tmp_path/'recipe.json'
     path.write_text(json.dumps({'version':1,'name':'Test','base_look':'missing'}))
     with pytest.raises(ValueError): user_library.import_profile(path,{})
-    root=user_library.library_dir()
+    root=library_dir()
     root.mkdir(parents=True,exist_ok=True)
     (root/'bad.entry.json').write_text('[]')
     assert user_library.load_library({})==['bad.entry.json']

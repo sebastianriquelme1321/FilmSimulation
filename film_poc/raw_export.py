@@ -4,9 +4,9 @@ import json
 import zipfile
 from pathlib import Path
 
+from .adapters.storage import atomic_path
 from .core.grain import GRAIN
 from .engine import LOOKS, PIPELINE_VERSION, edit_settings
-from .fileio import atomic_path
 from .user_library import validate_recipe
 
 
