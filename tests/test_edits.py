@@ -40,7 +40,7 @@ def test_mix_endpoints_and_recipe_round_trip(tmp_path):
             'temperature':20,'strength':.5}
     path=tmp_path/'recipe.json'
     path.write_text(json.dumps(recipe))
-    registry=engine.LOOKS.copy()
+    registry=dict(engine.LOOKS)
     key=library.import_profile(path,registry)
     engine.LOOKS[key]=registry[key]
     try:
@@ -89,7 +89,7 @@ def test_raw_bundle_includes_portable_custom_lut(tmp_path,monkeypatch):
     path=tmp_path/'identity.cube'
     rows=['LUT_3D_SIZE 2']+[f'{r} {g} {b}' for b in (0,1) for g in (0,1) for r in (0,1)]
     path.write_text('\n'.join(rows))
-    registry=engine.LOOKS.copy()
+    registry=dict(engine.LOOKS)
     key=library.import_profile(path,registry)
     engine.LOOKS[key]=registry[key]
     try:
