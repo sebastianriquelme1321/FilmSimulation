@@ -1,30 +1,17 @@
 """Presentation metadata and thumbnails for the extensible look registry."""
-import numpy as np
-from pathlib import Path
-from functools import lru_cache
 import json
-from PIL import Image,ImageDraw
+from functools import lru_cache
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageDraw
+
 from .engine import LOOKS, apply_look, uint8
-from .film_stocks import STOCKS
 
 
 def metadata(name):
-    profile = LOOKS[name]
-    if profile.get('backend') == 'darktable':
-        origin = 'darktable'
-        detail = 'Preset Lab adaptado de darktable · GPL · experimental'
-    elif profile.get('backend') == 'film-stock':
-        asset = STOCKS[profile['stock']]
-        origin = 'spektrafilm / Film Lab' if 'spektrafilm' in asset['source'] else 'Pat David / HaldCLUT'
-        detail = f"{asset['source']} · {asset['license']} · aproximación de película"
-    elif ' + ' in profile['display_name']:
-        origin = 'Personalizadas'
-        detail = 'Variante local de filtro B/N sobre fujiLUT · aproximación'
-    else:
-        origin = 'fujiLUT'
-        detail = 'Perfil adaptado de fujiLUT · MIT · aproximación'
-    return {'name': name, 'label': profile['display_name'],
-            'origin': profile.get('origin',origin), 'detail': profile.get('detail',detail)}
+    look = LOOKS[name]
+    return {'name': name, 'label': look.display_name, 'origin': look.origin, 'detail': look.detail}
 
 
 def origins():

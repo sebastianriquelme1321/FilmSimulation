@@ -1,6 +1,5 @@
 import io
 import re
-from copy import deepcopy
 from pathlib import Path
 from typing import NamedTuple
 
@@ -9,40 +8,14 @@ import rawpy
 from PIL import Image, ImageCms
 from scipy.interpolate import PchipInterpolator
 
-from . import adjustments, darktable_look, film_stocks, user_library
+from . import adjustments
 from .constants import JPEG_QUALITY, REC709_LUMA_F32, STRIP_ROWS
 from .fileio import atomic_path
 from .grain import apply_grain
-from .profile_transforms import apply_base_saturation, apply_film_simulation
-from .profiles import PROFILES
+from .looks import registry
+from .looks.base import display_rgb
 
-
-def _build_looks() -> dict[str, dict]:
-    looks = {
-        "Classic Chrome (aproximación)": PROFILES['Classic Chrome'],
-        "Classic Negative (aproximación)": PROFILES['Classic Neg'],
-        **{f"{profile['display_name']} (aproximación)": profile
-           for key, profile in PROFILES.items() if key not in ('Classic Chrome', 'Classic Neg')},
-    }
-    # Local approximations of the six monochrome color-filter variants. Neutral
-    # inputs remain neutral; only the RGB contribution to monochrome changes.
-    for key, label in (('Acros', 'ACROS'), ('Mono', 'Monochrome')):
-        for filter_name, weights in (('Ye', [.30, .60, .10]), ('R', [.60, .32, .08]),
-                                     ('G', [.18, .74, .08])):
-            profile = deepcopy(PROFILES[key])
-            profile['display_name'] = f'{label} + {filter_name}'
-            profile['color_matrix'] = [list(weights) for _ in range(3)]
-            looks[f'{label} + {filter_name} (aproximación)'] = profile
-    for preset, label in darktable_look.PRESETS.items():
-        looks[f'{label} · darktable (experimental)'] = {
-            'display_name': f'{label} darktable', 'backend': 'darktable', 'preset': preset}
-    for stock in film_stocks.STOCKS:
-        looks[f'{stock} (película aproximada)'] = {
-            'display_name': stock, 'backend': 'film-stock', 'stock': stock}
-    return looks
-
-
-LOOKS = _build_looks()
+LOOKS = registry
 PIPELINE_VERSION = 'v4.1-base-adjustments-mix'
 
 
@@ -116,33 +89,10 @@ def decode(path: Path) -> np.ndarray:
     return match_camera_tone(rgb.astype(np.float32) / 65535, reference)
 
 
-def display_rgb(linear: np.ndarray) -> np.ndarray:
-    """Clip to [0, 1] and apply the sRGB transfer curve."""
-    x = np.clip(linear, 0, 1)
-    return np.where(x <= .0031308, 12.92*x, 1.055*x**(1/2.4)-.055)
-
-
 def apply_look(linear: np.ndarray, name: str) -> np.ndarray:
     """Render linear sRGB through the named look; returns display-encoded float32."""
-    profile = LOOKS[name]
-    backend = profile.get('backend')
-    if backend == 'recipe':
-        recipe = profile['recipe']
-        return render_edit(linear, recipe['base_look'],
-                           recipe.get('exposure_ev', 0), recipe.get('temperature', 0),
-                           recipe.get('strength', 1.0))[1]
-    x = render_base(linear).astype(np.float64)
-    if backend == 'darktable':
-        return darktable_look.apply(x, profile['preset'])
-    if backend == 'film-stock':
-        return film_stocks.apply(x, profile['stock'])
-    if backend == 'user-lut':
-        return user_library.apply(x, profile)
-    rgb = apply_film_simulation(x.reshape(-1, 3), profile)
-    # Upstream Sepia has saturation=0, which erases its warm matrix/tints.
-    if profile['display_name'] != 'Sepia':
-        rgb = apply_base_saturation(rgb, profile['base_saturation'])
-    return np.clip(rgb.reshape(x.shape), 0, 1).astype(np.float32)
+    look = LOOKS[name]
+    return LOOKS.backend(look).apply(linear, look)
 
 
 class EditSettings(NamedTuple):

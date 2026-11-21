@@ -7,7 +7,7 @@ from pathlib import Path
 from .engine import LOOKS, PIPELINE_VERSION, edit_settings
 from .fileio import atomic_path
 from .grain import GRAIN
-from .user_library import library_dir, validate_recipe
+from .user_library import validate_recipe
 
 
 def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
@@ -36,14 +36,8 @@ def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
                     digest.update(block)
                     target.write(block)
             profile = LOOKS[base]
-            if profile.get('backend') == 'user-lut':
-                lut = Path(profile['path'])
-                entry = library_dir() / (lut.stem + '.entry.json')
-                if not entry.is_file():
-                    raise ValueError(
-                        'Falta la información local de la LUT para conservar la receta.')
-                archive.write(lut, 'library/' + lut.name)
-                archive.write(entry, 'library/' + entry.name)
+            for file in LOOKS.bundle_files(profile):
+                archive.write(file, 'library/' + file.name)
             archive.writestr('edit.recipe.json', json.dumps(recipe, ensure_ascii=False, indent=2))
             archive.writestr('export-info.json', json.dumps({
                 'format': 'FilmSimulation original RAW archive', 'version': 1,
