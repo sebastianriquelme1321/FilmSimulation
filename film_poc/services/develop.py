@@ -1,4 +1,4 @@
-"""Use case: open a RAW file and develop it to tone-matched linear sRGB."""
+"""Use case: open a RAW file or ordinary photo and develop it to tone-matched linear sRGB."""
 from pathlib import Path
 
 import numpy as np
@@ -21,13 +21,19 @@ def decode(path: Path) -> np.ndarray:
 
 
 def supported_labels() -> str:
-    """Labels of the registered RAW formats, e.g. 'RAW'."""
+    """Labels of the registered formats, e.g. 'RAW / Imagen'."""
     adapters.load_decoders()
     return raw.supported_labels()
 
 
 def open_filter() -> str:
-    """Qt file-dialog filter for the registered RAW formats."""
+    """Qt file-dialog filter: all photos first, then one group per registered format family."""
     labels = supported_labels()  # loads the decoders first
-    patterns = ' '.join(f'*{ext} *{ext.upper()}' for ext in raw.supported_extensions())
-    return f'{labels} ({patterns})'
+    groups = {label: [f'*{ext} *{ext.upper()}' for ext in exts]
+              for label, exts in raw.extensions_by_label().items()}
+    everything = ' '.join(' '.join(patterns) for patterns in groups.values())
+    if len(groups) == 1:
+        return f'{labels} ({everything})'
+    parts = [f'Fotos ({everything})']
+    parts += [f'{label} ({" ".join(patterns)})' for label, patterns in groups.items()]
+    return ';;'.join(parts)

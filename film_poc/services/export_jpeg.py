@@ -14,8 +14,10 @@ from .library import install
 def export_jpeg(linear: np.ndarray, name: str, destination: str | Path, grain: str = 'Desactivado',
                 *, exposure_ev: float | None = None, temperature: float | None = None,
                 intensity: float | None = None, contrast: float | None = None,
-                saturation: float | None = None, tint: float | None = None) -> None:
-    """Render in strips to limit full-resolution temporary allocations; atomic save."""
+                saturation: float | None = None, tint: float | None = None,
+                exif: bytes | None = None) -> None:
+    """Render in strips to limit full-resolution temporary allocations; atomic save.
+    ``exif`` (see services.metadata) is embedded as given."""
     install()
     destination = Path(destination)
     if destination.suffix.lower() not in ('.jpg', '.jpeg'):
@@ -28,6 +30,7 @@ def export_jpeg(linear: np.ndarray, name: str, destination: str | Path, grain: s
                              intensity, **extra)
         out[row:row+STRIP_ROWS] = uint8(apply_grain(rgb, grain, origin_y=row))
     icc = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
+    options = {'exif': exif} if exif else {}
     with atomic_path(destination, '.jpg') as temporary:
         Image.fromarray(out).save(temporary, format='JPEG', quality=JPEG_QUALITY, subsampling=0,
-                                  icc_profile=icc)
+                                  icc_profile=icc, **options)

@@ -6,7 +6,7 @@
 
 **English** · [Español](README.es.md)
 
-A free, open-source desktop app to develop RAW photos and apply film simulations. **Everything runs on your machine: no accounts, no cloud, no telemetry.** It ships 31 looks, a viewer with zoom and a before/after divider, adjustments for exposure, color and grain, shareable recipes, your own LUTs, and full-resolution JPEG export. Film names only describe the look being approximated; these are not official profiles.
+A free, open-source desktop app to develop RAW photos, edit ordinary photos (JPEG, PNG, TIFF) and apply film simulations. **Everything runs on your machine: no accounts, no cloud, no telemetry.** It ships 31 looks, a viewer with zoom and a before/after divider, adjustments for exposure, color and grain, shareable recipes, your own LUTs, and full-resolution JPEG export. Film names only describe the look being approximated; these are not official profiles.
 
 > **Beta.** Verified with real Sony ARW files. Other RAW formats are supported through LibRaw but untested (see [Known limitations](#known-limitations)). Feedback is very welcome.
 
@@ -33,19 +33,19 @@ The Windows build compiles and passes the automated tests, but it has not been t
 ## Features
 
 - Three columns: films (looks) on the left, the viewer in the center, adjustments on the right.
-- Import a RAW with the **Importar RAW** button or by dragging it onto the window.
+- Import a photo (RAW, JPEG, PNG or TIFF) with the **Importar foto** button or by dragging it onto the window.
 - Viewer with zoom, pan and a draggable before/after divider.
 - Adjustments before the look: exposure, temperature, contrast, saturation and tint; look strength and grain.
 - Local library of `.cube` LUTs, HaldCLUTs and JSON recipes.
-- Export a processed JPEG, or a ZIP with the original RAW plus your settings.
+- Export a processed JPEG (EXIF is kept when the source has it), or a ZIP with the untouched original file plus your settings.
 - Two themes: **Taller neutro** (neutral workshop, the default) and **Vidrio y luz** (glass and light).
-- LibRaw-based RAW decoding for many brands (Sony ARW verified, the rest experimental) with pluggable decoders.
+- LibRaw-based RAW decoding for many brands (Sony ARW verified, the rest experimental) and Pillow-based decoding of JPEG, PNG and TIFF photos, with pluggable decoders.
 
 > The interface is currently in Spanish.
 
 ## Usage
 
-1. Import a RAW (the **Importar RAW** button, or drag and drop a file onto the window).
+1. Import a photo: a RAW, or an ordinary JPEG/PNG/TIFF (the **Importar foto** button, or drag and drop a file onto the window).
 2. Pick a film in the left column: click a card or press Enter. Moving through the list with the arrow keys does not apply it.
 3. Adjust exposure, temperature, contrast, saturation, tint, strength and grain on the right. **Restablecer ajustes** (reset) returns everything to neutral, keeping the film and the grain.
 4. Export with the format selector and the **Exportar** button. The dialog suggests the folder of your last export (or, the first time, the photo's folder) and you can pick another; your choice is remembered.
@@ -64,7 +64,7 @@ The Windows build compiles and passes the automated tests, but it has not been t
 
 The viewer needs focus (click it) to receive key presses. In the exposure control the arrow keys change 0.1 EV and PageUp/PageDown 0.5 EV; you can also type an exact value.
 
-**Important:** the viewer works on a preview of up to 1280 px on the long side, so “100 %” refers to that preview, not to the RAW's pixels. Export does use the full resolution.
+**Important:** the viewer works on a preview of up to 1280 px on the long side, so “100 %” refers to that preview, not to the photo's pixels. Export does use the full resolution.
 
 ## Local library
 
@@ -86,7 +86,7 @@ The library is stored outside the repository: `%LOCALAPPDATA%/FilmPOC` on Window
 
 Exposure (−3 to +3 EV), relative temperature and tint, contrast and saturation (−100 to 100, neutral at 0) are applied in linear RGB before sRGB encoding and before the look. Temperature is a cool/warm correction relative to the camera white balance, not a Kelvin-calibrated sensor setting; tint shifts between green and magenta; contrast works around mid-gray. Strength blends the adjusted base and the simulation in sRGB; grain is applied afterwards. The preview and the export use the same pipeline. These adjustments cannot recover information that the initial development already clipped.
 
-The export selector offers **JPEG procesado** (processed JPEG) or **RAW original + ajustes (.zip)**. The ZIP keeps the ARW byte for byte with its original metadata, a JSON recipe, a SHA-256 checksum and the local LUT when applicable. It does not modify the sensor mosaic or bake the look into the ARW. To restore: extract the archive, import the ARW and add `edit.recipe.json` to the library. If it includes `library/`, copy its contents into the local library and restart before importing the recipe. Other editors do not interpret this format automatically. Processed DNG export is not available.
+The export selector offers **JPEG procesado** (processed JPEG) or **RAW original + ajustes (.zip)** (for a JPEG/PNG/TIFF source it reads **Original + ajustes (.zip)**). The ZIP keeps the original file (ARW, JPEG...) byte for byte with its original metadata, a JSON recipe, a SHA-256 checksum and the local LUT when applicable. It does not modify the sensor mosaic or bake the look into the original file. To restore: extract the archive, import the original and add `edit.recipe.json` to the library. If it includes `library/`, copy its contents into the local library and restart before importing the recipe. Other editors do not interpret this format automatically. Processed DNG export is not available.
 
 The included profiles and imported LUTs work with sRGB input. There is no automatic conversion from Rec.709, S-Log or other Log curves; a gamma selector alone would not fix primaries, gamut or a LUT's reference exposure.
 
@@ -129,12 +129,20 @@ Each system (and, on macOS, each architecture) must be built on its own machine.
 
 ## Known limitations
 
-- The viewer zoom works on a preview of up to 1280 px; “100 %” is not the same as the RAW's pixels.
+- The viewer zoom works on a preview of up to 1280 px; “100 %” is not the same as the photo's pixels.
 - Only Sony ARW has been verified with real files. The other RAW extensions (Canon, Nikon, Fujifilm, Panasonic, Olympus, Pentax, DNG, etc.) are decoded with LibRaw and are **experimental** and untested; if your camera model does not open, report it from Ayuda > Enviar feedback (Help > Send feedback). If the RAW has no embedded preview, it is developed without matching the camera's tone. More detail in [CONTRIBUTING.md](CONTRIBUTING.md).
 - The packaged apps are not signed or notarized by Apple or Microsoft: macOS (Gatekeeper) and Windows (SmartScreen) show a warning the first time; see [packaging/README.md](packaging/README.md).
 - macOS compatibility still needs confirming with real-world testing; LUTs expect sRGB input.
 - The simulations are approximations, with no guaranteed equivalence to real cameras or film.
 - The interface is in Spanish only for now.
+
+**Ordinary photos (JPEG, PNG, TIFF).** They are read with Pillow, oriented by their EXIF tag and linearized from sRGB. Limits:
+
+- Sources are 8-bit: a JPEG already has baked-in tone and clipped highlights, so there is no highlight recovery and no camera tone matching (that exists for RAW only). Pillow cannot hold 16-bit RGB, so 16-bit RGB PNG/TIFF files are read at 8 bits; only 16-bit grayscale keeps its precision.
+- An embedded ICC profile other than sRGB (Display P3, Adobe RGB...) is converted to sRGB; an unreadable profile is ignored with a warning and the file is treated as sRGB. Export always embeds sRGB.
+- JPEG to JPEG recompresses the image (quality 95, 4:4:4), so a small generational loss is unavoidable; the **Original + ajustes (.zip)** export keeps the original untouched.
+- Transparency (PNG alpha) is dropped: the image is composited over white. Grayscale, palette and CMYK files are converted to RGB.
+- The EXIF block (camera, lens, date, exposure) is copied to the exported JPEG with orientation reset to 1 and without the embedded thumbnail or maker notes. Other formats (HEIC, WebP, BMP...) are not supported. Images above about 200 megapixels are refused.
 
 RAW development uses rawpy/LibRaw and takes the camera thumbnail as a tonal guide when available. The simulations are approximations and depend on the development and the scene. Export keeps the resolution and embeds an sRGB ICC profile. There is no colorimetric calibration or guaranteed equivalence to Fujifilm cameras or analog film.
 

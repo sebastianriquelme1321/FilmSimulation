@@ -47,7 +47,7 @@ def test_decoder_for_is_case_insensitive_and_message_uses_labels(fake_decoder):
     assert raw.is_supported(Path('x.Arw'))
     with pytest.raises(ValueError) as error:
         raw.decoder_for(Path('photo.xyz'))
-    assert 'RAW / Fake .FAKERAW' in str(error.value)
+    assert 'RAW / Imagen / Fake .FAKERAW' in str(error.value)
 
 
 def test_fake_decoder_is_routed_through_develop(fake_decoder):
@@ -57,15 +57,19 @@ def test_fake_decoder_is_routed_through_develop(fake_decoder):
 
 
 def test_open_filter_follows_registered_decoders(fake_decoder):
-    flt = develop.open_filter()
-    assert flt.startswith('RAW / Fake .FAKERAW (*.arw *.ARW ') and '*.cr3 *.CR3' in flt
-    assert flt.endswith('*.fakeraw *.FAKERAW)')
-    assert develop.supported_labels() == 'RAW / Fake .FAKERAW'
+    groups = develop.open_filter().split(';;')
+    assert groups[0].startswith('Fotos (*.arw *.ARW ') and '*.jpg *.JPG' in groups[0]
+    assert groups[0].endswith('*.fakeraw *.FAKERAW)')
+    assert [g.split(' (')[0] for g in groups[1:]] == ['RAW', 'Imagen', 'Fake .FAKERAW']
+    assert groups[-1] == 'Fake .FAKERAW (*.fakeraw *.FAKERAW)'
+    assert develop.supported_labels() == 'RAW / Imagen / Fake .FAKERAW'
 
 
-def test_open_filter_with_only_arw():
-    flt = develop.open_filter()
-    assert flt.startswith('RAW (*.arw *.ARW ') and '*.nef *.NEF' in flt
+def test_open_filter_has_raw_and_image_groups():
+    groups = develop.open_filter().split(';;')
+    assert [g.split(' (')[0] for g in groups] == ['Fotos', 'RAW', 'Imagen']
+    assert groups[1].startswith('RAW (*.arw *.ARW ') and '*.nef *.NEF' in groups[1]
+    assert groups[2] == 'Imagen (*.jpg *.JPG *.jpeg *.JPEG *.png *.PNG *.tif *.TIF *.tiff *.TIFF)'
 
 
 def test_fake_decoder_is_cleaned_up():

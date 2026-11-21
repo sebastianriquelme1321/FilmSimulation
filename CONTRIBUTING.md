@@ -48,7 +48,7 @@ de funciones) y compara con la tabla `FORBIDDEN`. `core` tampoco puede importar 
   `services/library.py::install`).
 - Prueba en `tests/` (ver `tests/test_registry.py`).
 
-**b) Añadir un formato RAW**
+**b) Añadir un formato RAW o de imagen**
 - `film_poc/adapters/<nombre>_decoder.py`: clase con `extensions` (minúsculas, con punto), `label`
   y `decode(path) -> (linear, reference)`, y `register_decoder(MiDecoder())` (de `core.raw`).
   Se importa solo: `adapters.load_decoders()` carga todo módulo `*_decoder`. Modelo:
@@ -58,9 +58,14 @@ de funciones) y compara con la tabla `FORBIDDEN`. `core` tampoco puede importar 
   .nrw .raf .rw2 .orf .pef .dng .srw .3fr .iiq .erf .mrw .kdc .dcr .raw`. Solo Sony ARW está
   verificado con archivos reales; el resto es EXPERIMENTAL y sin probar. Los modelos no
   compatibles se pueden reportar (Ayuda > Enviar feedback).
+- Las fotos corrientes (`.jpg .jpeg .png .tif .tiff`) las decodifica `adapters/image_decoder.py`
+  (Pillow, etiqueta `Imagen`): aplica la orientación EXIF, convierte perfiles ICC no sRGB a sRGB,
+  descompone la curva sRGB a lineal y devuelve `reference=None` (sin ajuste de tono). Un
+  decodificador puede definir además `format_label(path)` para el nombre que muestra la ventana
+  («JPEG», «PNG»…). El EXIF del origen lo lee `services/metadata.py` y se pasa a `export_jpeg`.
 - El filtro del diálogo de apertura (`services/develop.py::open_filter`) y el texto de bienvenida
-  se derivan de los decodificadores registrados. Pendiente a mano: los textos «Sony ARW» de
-  `ui/window.py` y `services/export_bundle.py` aún asumen ARW.
+  se derivan de los decodificadores registrados. Los textos del botón y del marcador de posición
+  de `ui/window.py` son genéricos («foto»).
 
 **c) Añadir un control de UI**
 - `film_poc/ui/adjustments_panel.py`: crear el widget, conectarlo a `self._changed` (emite

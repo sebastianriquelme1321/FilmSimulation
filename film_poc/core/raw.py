@@ -37,6 +37,22 @@ def supported_extensions() -> tuple[str, ...]:
     return tuple(_decoders)
 
 
+def format_label(path: Path) -> str:
+    """Specific format name of a supported file ('JPEG', 'RAW'...): the decoder's optional
+    ``format_label(path)``, else its ``label``."""
+    decoder = decoder_for(path)
+    describe = getattr(decoder, 'format_label', None)
+    return describe(path) if describe else decoder.label
+
+
+def extensions_by_label() -> dict[str, tuple[str, ...]]:
+    """Registered extensions grouped by decoder label, in registration order."""
+    groups: dict[str, list[str]] = {}
+    for extension, decoder in _decoders.items():
+        groups.setdefault(decoder.label, []).append(extension)
+    return {label: tuple(found) for label, found in groups.items()}
+
+
 def decoder_for(path: Path) -> RawDecoder:
     try:
         return _decoders[path.suffix.lower()]
