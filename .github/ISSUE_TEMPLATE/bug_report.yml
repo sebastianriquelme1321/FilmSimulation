@@ -1,0 +1,83 @@
+name: Reportar un problema
+description: Algo no funciona como esperabas
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Revisa que no esté ya reportado. Si puedes compartir un RAW de muestra o una captura de pantalla, adjúntalo en el campo final (opcional). No incluyas datos personales.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducirlo
+      placeholder: "1. Importar el RAW\n2. Elegir la película…\n3. …"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Qué esperabas que pasara
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Qué pasó en realidad
+    validations:
+      required: true
+  - type: input
+    id: camera
+    attributes:
+      label: Cámara y formato RAW
+      placeholder: "Sony A7 III, ARW"
+    validations:
+      required: true
+  - type: dropdown
+    id: opened
+    attributes:
+      label: ¿Se abrió el archivo?
+      options:
+        - Sí, se abrió
+        - No, mostró un error
+        - No lo sé
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de la aplicación
+      description: En Ayuda > Acerca de FilmSimulation.
+      placeholder: "0.6.0"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Sistema operativo
+      placeholder: "macOS 15 (arm64) / Windows 11"
+    validations:
+      required: true
+  - type: textarea
+    id: system
+    attributes:
+      label: Información del sistema
+      description: Se rellena sola desde Ayuda > Reportar un problema.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: log
+    attributes:
+      label: Extracto del registro
+      description: Ayuda > Reportar un problema lo incluye; también puedes abrir la carpeta con Ayuda > Abrir carpeta de registros.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Capturas o RAW de muestra (opcional)
+      description: Arrastra aquí una captura. Los RAW suelen superar el límite de GitHub; si puedes compartir uno, indica un enlace de descarga.
+    validations:
+      required: false

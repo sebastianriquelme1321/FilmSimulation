@@ -1,10 +1,11 @@
 """Main window: top-level layout, signal wiring and background-job orchestration."""
+import logging
 import struct
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import Qt, QTimer, QUrl, qVersion
+from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -32,9 +33,19 @@ from ..core.render import LOOKS, apply_look, edit_settings, look_slug, uint8
 from ..services import library
 from ..services.catalog import metadata, origins, reference_linear, reference_thumbnails
 from ..services.develop import decode, open_filter, supported_labels
+from ..services.diagnostics import (
+    app_version,
+    install_excepthook,
+    issue_url,
+    log_dir,
+    setup_logging,
+    system_info,
+    tail_log,
+)
 from ..services.export_bundle import export_raw_bundle
 from ..services.export_jpeg import export_jpeg
 from ..services.preferences import load_surround, load_theme, save_surround, save_theme
+from .about import AboutDialog
 from .adjustments_panel import AdjustmentsPanel
 from .backdrop import StudioBackdrop
 from .gallery import Gallery
@@ -43,7 +54,8 @@ from .jobs import make_job
 from .theme import DEFAULT_THEME, THEMES, stylesheet
 from .viewer import SURROUNDS, CompareView
 
-ALL_ORIGINS = 'Todos los orígenes'
+log = logging.getLogger('film_poc.ui')
+ALL_ORIGINS ='Todos los orígenes'
 HINT = 'Un poco de nostalgia, en cada foto.'
 
 COLOR_KEYS = ('contrast', 'saturation', 'tint')
@@ -100,10 +112,12 @@ class Window(QMainWindow):
         self._build_footer(layout)
         self.setCentralWidget(root)
         self._connect_signals()
+        self._build_help_menu()
         if startup_warnings:
             self.status.setText(f'{len(startup_warnings)} entrada(s) de tu biblioteca no se '
                                 'pudieron cargar.')
             self.status.setToolTip('\n'.join(startup_warnings))
+            log.warning('Library entries not loaded: %s', '; '.join(startup_warnings))
 
     # ---- layout -------------------------------------------------------------------------
 
@@ -340,6 +354,48 @@ class Window(QMainWindow):
         self.apply_theme(self.theme_name)
         QTimer.singleShot(0, self.load_gallery)
 
+    # ---- help menu ----------------------------------------------------------------------
+
+    def _build_help_menu(self):
+        menu = self.menuBar().addMenu('Ayuda')
+        entries = (('Enviar feedback…', self.send_feedback),
+                   ('Reportar un problema…', self.report_problem),
+                   ('Copiar información del sistema', self.copy_system_info),
+                   ('Abrir carpeta de registros', self.open_log_folder),
+                   ('Acerca de FilmSimulation', self.show_about))
+        self.help_actions = {}
+        for text, slot in entries:
+            action = menu.addAction(text)
+            action.triggered.connect(lambda _=False, slot=slot: slot())
+            self.help_actions[text] = action
+        self.help_menu = menu
+
+    def _issue(self, kind, extra=''):
+        return issue_url(kind, extra, theme=self.theme_name, qt=qVersion())
+
+    def send_feedback(self):
+        """Open the prefilled feedback form in the browser (nothing is sent by the app)."""
+        QDesktopServices.openUrl(QUrl(self._issue('feedback')))
+
+    def report_problem(self):
+        """Open the prefilled bug form, with the end of the local log."""
+        QDesktopServices.openUrl(QUrl(self._issue('bug', tail_log(3000))))
+
+    def copy_system_info(self):
+        """Copy the environment summary to the clipboard."""
+        QApplication.clipboard().setText(system_info(self.theme_name, qVersion()))
+        self.status.setText('Información del sistema copiada al portapapeles.')
+
+    def open_log_folder(self):
+        """Show the log folder in the file manager."""
+        folder = log_dir()
+        folder.mkdir(parents=True, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder)))
+
+    def show_about(self):
+        """Show the About dialog."""
+        AboutDialog(self).exec()
+
     # ---- theme --------------------------------------------------------------------------
 
     def apply_theme(self, theme):
@@ -508,6 +564,7 @@ class Window(QMainWindow):
 
     def error(self, message):
         """Report a failed operation."""
+        log.error('Operation failed: %s', message)
         self.status.setText('No se pudo completar la operación.')
         QMessageBox.warning(self, 'FilmSimulation', message)
 
@@ -557,6 +614,8 @@ class Window(QMainWindow):
         self.refresh_gallery()
         self.render()
         self.status.setText(f'{source.name} · {linear.shape[1]} × {linear.shape[0]}')
+        log.info('RAW opened: %s, %d x %d, %s', source.name, linear.shape[1], linear.shape[0],
+                 self._format_label(source))
 
     @staticmethod
     def _format_label(source):
@@ -674,8 +733,10 @@ class Window(QMainWindow):
                 def operation():
                     return export_jpeg(self.linear, name, destination, grain=grain, **values)
                 message = 'Exportando resolución completa…'
-            self.run_job(operation, lambda _: self.status.setText(f'Exportado: {destination}'),
-                         message)
+            def exported(_):
+                self.status.setText(f'Exportado: {destination}')
+                log.info('Export done: %s (%s)', destination.name, 'RAW+receta' if raw else 'JPEG')
+            self.run_job(operation, exported, message)
 
     def closeEvent(self, event):
         """Refuse to close mid-export; defer closing until workers finish."""
@@ -694,8 +755,21 @@ class Window(QMainWindow):
             event.accept()
 
 
+def report_crash(exc):
+    """Tell the user something went wrong (only when a QApplication exists)."""
+    if QApplication.instance() is None:
+        return
+    QMessageBox.critical(
+        None, 'FilmSimulation',
+        f'Algo salió mal: {type(exc).__name__}.\n\nUsa Ayuda > Reportar un problema para '
+        f'enviarnos el detalle. El registro está en:\n{log_dir()}')
+
+
 def main():
     """Launch the application."""
+    setup_logging()
+    install_excepthook(report_crash)
+    log.info('FilmSimulation %s starting', app_version())
     app = QApplication(sys.argv)
     window = Window()
     window.show()
