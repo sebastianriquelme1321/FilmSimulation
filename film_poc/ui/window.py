@@ -29,7 +29,7 @@ from ..core.preview import PreviewPipeline
 from ..core.render import LOOKS, apply_look, edit_settings, look_slug, uint8
 from ..services import library
 from ..services.catalog import metadata, origins, reference_linear, reference_thumbnails
-from ..services.develop import decode
+from ..services.develop import decode, open_filter, supported_labels
 from ..services.export_bundle import export_raw_bundle
 from ..services.export_jpeg import export_jpeg
 from ..services.preferences import load_theme, save_theme
@@ -217,7 +217,8 @@ class Window(QMainWindow):
             column.addWidget(label)
             if index:
                 self.after_title = label
-            view = QLabel('Tu imagen empieza aquí\n\nImporta un archivo Sony .ARW' if index == 0
+            view = QLabel(f'Tu imagen empieza aquí\n\nImporta un archivo {supported_labels()}'
+                          if index == 0
                           else 'Encuentra tu look\n\nElige una película de la colección')
             view.setAlignment(Qt.AlignmentFlag.AlignCenter)
             view.setMinimumSize(160, 160)
@@ -441,8 +442,7 @@ class Window(QMainWindow):
         """Ask for a RAW file and develop it."""
         if self.busy:
             return
-        path, _ = QFileDialog.getOpenFileName(self, 'Importar Sony RAW', '',
-                                              'Sony RAW (*.arw *.ARW)')
+        path, _ = QFileDialog.getOpenFileName(self, 'Importar Sony RAW', '', open_filter())
         if path:
             source = Path(path)
             self.run_job(lambda: decode(source), lambda linear: self.loaded(source, linear),

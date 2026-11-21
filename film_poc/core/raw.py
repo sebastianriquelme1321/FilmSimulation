@@ -31,6 +31,10 @@ def supported_labels() -> str:
     return ' / '.join(dict.fromkeys(d.label for d in _decoders.values()))
 
 
+def supported_extensions() -> tuple[str, ...]:
+    return tuple(_decoders)
+
+
 def decoder_for(path: Path) -> RawDecoder:
     try:
         return _decoders[path.suffix.lower()]

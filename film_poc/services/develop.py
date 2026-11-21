@@ -15,3 +15,16 @@ def decode(path: Path) -> np.ndarray:
     adapters.load_decoders()
     linear, reference = raw.decoder_for(path).decode(path)
     return match_camera_tone(linear, reference)
+
+
+def supported_labels() -> str:
+    """Labels of the registered RAW formats, e.g. 'Sony .ARW'."""
+    adapters.load_decoders()
+    return raw.supported_labels()
+
+
+def open_filter() -> str:
+    """Qt file-dialog filter for the registered RAW formats."""
+    labels = supported_labels()  # loads the decoders first
+    patterns = ' '.join(f'*{ext} *{ext.upper()}' for ext in raw.supported_extensions())
+    return f'{labels} ({patterns})'

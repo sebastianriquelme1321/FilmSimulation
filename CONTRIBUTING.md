@@ -53,9 +53,9 @@ de funciones) y compara con la tabla `FORBIDDEN`. `core` tampoco puede importar 
   y `decode(path) -> (linear, reference)`, y `register_decoder(MiDecoder())` (de `core.raw`).
   Se importa solo: `adapters.load_decoders()` carga todo módulo `*_decoder`. Modelo:
   `adapters/rawpy_decoder.py`.
-- Pendiente a mano: el diálogo de apertura en `film_poc/ui/window.py` (`'Sony RAW (*.arw *.ARW)'`)
-  está fijado a `*.arw`; añade las extensiones nuevas. Los textos «Sony ARW» de `ui/window.py` y
-  `services/export_bundle.py` también asumen ARW.
+- El filtro del diálogo de apertura (`services/develop.py::open_filter`) y el texto de bienvenida
+  se derivan de los decodificadores registrados. Pendiente a mano: los textos «Sony ARW» de
+  `ui/window.py` y `services/export_bundle.py` aún asumen ARW.
 
 **c) Añadir un control de UI**
 - `film_poc/ui/adjustments_panel.py`: crear el widget, conectarlo a `self._changed` (emite

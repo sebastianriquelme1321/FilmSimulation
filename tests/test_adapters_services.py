@@ -54,6 +54,15 @@ def test_fake_decoder_is_routed_through_develop(fake_decoder):
     assert '.fakeraw' in raw._decoders
 
 
+def test_open_filter_follows_registered_decoders(fake_decoder):
+    assert develop.open_filter() == 'Sony .ARW / Fake .FAKERAW (*.arw *.ARW *.fakeraw *.FAKERAW)'
+    assert develop.supported_labels() == 'Sony .ARW / Fake .FAKERAW'
+
+
+def test_open_filter_with_only_arw():
+    assert develop.open_filter() == 'Sony .ARW (*.arw *.ARW)'
+
+
 def test_fake_decoder_is_cleaned_up():
     assert '.fakeraw' not in raw._decoders
 
