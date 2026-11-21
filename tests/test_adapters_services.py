@@ -200,3 +200,18 @@ def test_bundle_zip_members_with_custom_lut(tmp_path):
                  f'library/{digest}.cube', f'library/{digest}.entry.json'])
     finally:
         engine.LOOKS.pop(key)
+
+
+def test_decoder_scan_runs_once(monkeypatch):
+    monkeypatch.setattr(adapters, '_loaded', False)
+    calls = []
+    real = adapters.pkgutil.iter_modules
+
+    def counting(*args, **kwargs):
+        calls.append(1)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(adapters.pkgutil, 'iter_modules', counting)
+    for _ in range(3):
+        adapters.load_decoders()
+    assert len(calls) == 1 and '.arw' in raw._decoders
