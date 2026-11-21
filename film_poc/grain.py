@@ -1,6 +1,8 @@
 """Deterministic monochromatic output grain; not a measured film stock model."""
 import numpy as np
 
+from .constants import REC709_LUMA_F32
+
 GRAIN = {'Desactivado': 0.0, 'Suave': .018, 'Fuerte': .055}
 _SIZE = {'Suave': 2, 'Fuerte': 6}
 
@@ -14,7 +16,9 @@ def _noise(rows, cols):
     return np.sqrt(-2*np.log(u))*np.cos(2*np.pi*v)
 
 
-def apply_grain(rgb, mode='Desactivado', origin_y=0, step=1):
+def apply_grain(rgb: np.ndarray, mode: str = 'Desactivado', origin_y: int = 0,
+                step: int = 1) -> np.ndarray:
+    """Add deterministic luminance-weighted grain; origin_y/step align strips and previews."""
     strength = GRAIN[mode]
     if not strength:
         return rgb
@@ -30,6 +34,6 @@ def apply_grain(rgb, mode='Desactivado', origin_y=0, step=1):
     top = _noise(iy,ix)*(1-fx)+_noise(iy,ix+np.uint32(1))*fx
     bottom = _noise(iy+np.uint32(1),ix)*(1-fx)+_noise(iy+np.uint32(1),ix+np.uint32(1))*fx
     noise = (top*(1-fy)+bottom*fy)*1.3
-    y = np.sum(rgb*np.array([.2126,.7152,.0722],dtype=np.float32),axis=-1)
+    y = np.sum(rgb*REC709_LUMA_F32,axis=-1)
     weight = .25+.75*np.sin(np.pi*np.clip(y,0,1))
     return np.clip(rgb+(strength*weight*noise)[...,None],0,1).astype(np.float32)

@@ -2,9 +2,13 @@
 # f3bead9b6d8dbc3f8ea489b70850fbc42fb4db46. Upstream declares MIT.
 # See THIRD_PARTY_NOTICES.md for attribution and local changes.
 from __future__ import annotations
+
 import numpy as np
 from numpy.typing import NDArray
 from scipy.interpolate import CubicSpline
+
+from .constants import REC709_LUMA
+
 FilmProfile = dict
 
 def rgb_to_hsl(rgb: NDArray) -> NDArray:
@@ -65,7 +69,8 @@ def hsl_to_rgb(hsl: NDArray) -> NDArray:
 
 def _luminance(rgb: NDArray) -> NDArray:
     """Compute perceived luminance (BT.709 weights)."""
-    return 0.2126 * rgb[:, 0] + 0.7152 * rgb[:, 1] + 0.0722 * rgb[:, 2]
+    r, g, b = REC709_LUMA
+    return r * rgb[:, 0] + g * rgb[:, 1] + b * rgb[:, 2]
 
 _HUE_RANGES: dict[str, tuple[float, float]] = {
     "reds": (0.0, 30.0),

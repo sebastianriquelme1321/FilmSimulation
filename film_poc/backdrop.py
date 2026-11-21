@@ -1,9 +1,9 @@
 """Cached photo-derived ambient backdrop. Image viewers remain neutral gray."""
 import numpy as np
-from PIL import Image,ImageFilter
-from PySide6.QtWidgets import QWidget
-from PySide6.QtGui import QPainter,QColor,QRadialGradient,QImage,QPixmap
+from PIL import Image, ImageFilter
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QImage, QPainter, QPixmap, QRadialGradient
+from PySide6.QtWidgets import QWidget
 
 
 class StudioBackdrop(QWidget):
@@ -14,13 +14,15 @@ class StudioBackdrop(QWidget):
         self.ambient=None
 
     def set_reference(self,rgb):
-        if rgb is self.reference_source: return
+        if rgb is self.reference_source:
+            return
         self.reference_source=rgb
         image=Image.fromarray(rgb).resize((120,80)).filter(ImageFilter.GaussianBlur(13))
         pixels=np.asarray(image).copy()
         qimage=QImage(pixels.data,120,80,pixels.strides[0],QImage.Format.Format_RGB888).copy()
         self.ambient=QPixmap.fromImage(qimage)
-        if self.theme=='glass': self.update()
+        if self.theme=='glass':
+            self.update()
 
     def paintEvent(self,event):
         painter=QPainter(self)

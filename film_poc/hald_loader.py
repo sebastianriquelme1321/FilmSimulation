@@ -4,8 +4,10 @@
 import struct
 import zlib
 from pathlib import Path
+
 import numpy as np
 from PIL import Image
+
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
 def _iter_png_chunks(data: bytes):
