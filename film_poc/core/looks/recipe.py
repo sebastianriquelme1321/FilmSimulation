@@ -14,7 +14,7 @@ class RecipeBackend:
         self._render_edit = render_edit
 
     def apply(self, linear, look):
-        recipe = look['recipe']
+        recipe = look.params['recipe']
         return self._render_edit(linear, recipe['base_look'], recipe.get('exposure_ev', 0),
                                  recipe.get('temperature', 0), recipe.get('strength', 1.0))[1]
 
@@ -29,7 +29,7 @@ def validate_recipe(data: dict, registry: dict) -> dict:
         if field in data and (not isinstance(data[field], str) or len(data[field]) > 500):
             raise ValueError('Metadatos de receta inválidos.')
     base = data.get('base_look')
-    if base not in registry or registry[base].get('backend') == 'recipe':
+    if base not in registry or registry[base].backend == 'recipe':
         raise ValueError('La simulación base no está instalada o es otra receta.')
     strength = data.get('strength', 1.0)
     if (isinstance(strength, bool) or not isinstance(strength, (float, int))

@@ -27,7 +27,7 @@ def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
     if grain not in GRAIN:
         raise ValueError('Grano no compatible.')
     base, settings = edit_settings(name, **adjustments)
-    recipe = {'version': 1, 'name': LOOKS[name]['display_name'] + ' · edición',
+    recipe = {'version': 1, 'name': LOOKS[name].display_name + ' · edición',
               'base_look': base, 'input_space': 'sRGB', 'grain': grain,
               'strength': settings['intensity'], 'exposure_ev': settings['exposure_ev'],
               'temperature': settings['temperature']}
@@ -41,9 +41,10 @@ def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
                 while block := original.read(1024*1024):
                     digest.update(block)
                     target.write(block)
-            profile = LOOKS[base]
+            look = LOOKS[base]
             # Only imported LUTs live outside the app; they travel with the archive.
-            files = lut_files.bundle_files(profile['path']) if profile.backend == 'user-lut' else []
+            files = (lut_files.bundle_files(look.params['path'])
+                     if look.backend == 'user-lut' else [])
             for file in files:
                 archive.write(file, 'library/' + file.name)
             archive.writestr('edit.recipe.json', json.dumps(recipe, ensure_ascii=False, indent=2))

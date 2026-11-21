@@ -23,9 +23,9 @@ def fake():
 def test_register_get_and_order():
     reg = LookRegistry()
     reg['b'] = Look('B')
-    reg['a'] = {'display_name': 'A', 'backend': 'x', 'path': 'p'}
+    reg['a'] = Look('A', 'x', params={'path': 'p'})
     assert 'a' in reg and list(reg) == ['b', 'a']
-    assert reg['a']['path'] == 'p' and reg['a'].get('missing') is None
+    assert reg['a'].params['path'] == 'p'
     assert [look.display_name for look in dict(reg).values()] == ['B', 'A']
 
 

@@ -28,7 +28,7 @@ def apply(rgb, stock):
 
 class FilmStockBackend:
     def apply(self, linear, look):
-        return apply(display_rgb(linear).astype(np.float64), look['stock'])
+        return apply(display_rgb(linear).astype(np.float64), look.params['stock'])
 
 
 registry.add_backend('film-stock', FilmStockBackend())

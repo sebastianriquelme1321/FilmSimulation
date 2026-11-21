@@ -14,15 +14,16 @@ _FILTERS = (('Ye', [.30, .60, .10]), ('R', [.60, .32, .08]), ('G', [.18, .74, .0
 class FujiBackend:
     def apply(self, linear, look):
         x = display_rgb(linear).astype(np.float64)
-        rgb = apply_film_simulation(x.reshape(-1, 3), look)
+        rgb = apply_film_simulation(x.reshape(-1, 3), look.params)
         # Upstream Sepia has saturation=0, which erases its warm matrix/tints.
         if look.display_name != 'Sepia':
-            rgb = apply_base_saturation(rgb, look['base_saturation'])
+            rgb = apply_base_saturation(rgb, look.params['base_saturation'])
         return np.clip(rgb.reshape(x.shape), 0, 1).astype(np.float32)
 
 
 def _look(profile, origin='fujiLUT', detail=_DETAIL):
-    return Look.from_profile({**profile, 'origin': origin, 'detail': detail})
+    params = {k: v for k, v in profile.items() if k not in ('display_name', 'backend')}
+    return Look(profile['display_name'], profile.get('backend'), origin, detail, params)
 
 
 registry.add_backend('fuji', FujiBackend())

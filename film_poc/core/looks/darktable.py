@@ -7,7 +7,7 @@ from .base import Look, display_rgb, registry
 
 class DarktableBackend:
     def apply(self, linear, look):
-        return darktable_look.apply(display_rgb(linear).astype(np.float64), look['preset'])
+        return darktable_look.apply(display_rgb(linear).astype(np.float64), look.params['preset'])
 
 
 registry.add_backend('darktable', DarktableBackend())

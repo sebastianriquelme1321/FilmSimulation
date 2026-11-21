@@ -8,6 +8,7 @@ from pathlib import Path
 
 from ..adapters import darktable_files, film_stock_files, lut_files
 from ..adapters.storage import atomic_path, library_dir
+from ..core.looks import Look
 from ..core.looks.recipe import validate_recipe
 from ..core.render import LOOKS
 
@@ -40,16 +41,15 @@ def startup() -> list[str]:
     return load_library(LOOKS)
 
 
-def _profile(entry: dict, root: Path) -> dict:
+def _profile(entry: dict, root: Path) -> Look:
     parts = (entry.get('author'), entry.get('license'), 'Entrada sRGB · importado localmente')
     details = ' · '.join(x for x in parts if x)
-    p = {'display_name': entry['name'], 'origin': 'Comunidad / local', 'detail': details,
-         'backend': entry['backend'], 'source': entry.get('source', '')}
-    if p['backend'] == 'recipe':
-        p['recipe'] = entry['recipe']
+    params = {'source': entry.get('source', '')}
+    if entry['backend'] == 'recipe':
+        params['recipe'] = entry['recipe']
     else:
-        p['path'] = str(root/entry['file'])
-    return p
+        params['path'] = str(root/entry['file'])
+    return Look(entry['name'], entry['backend'], 'Comunidad / local', details, params)
 
 
 def import_profile(path: str | Path, registry: dict = LOOKS) -> str:

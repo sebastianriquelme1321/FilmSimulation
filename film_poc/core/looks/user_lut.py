@@ -9,7 +9,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 from .. import tables
 from ..lut3d import apply_lut3d
-from .base import display_rgb, registry
+from .base import Look, display_rgb, registry
 
 
 @lru_cache(maxsize=20)
@@ -19,9 +19,9 @@ def _table(path):
     return RegularGridInterpolator((axis, axis, axis), cube, bounds_error=True), low, high
 
 
-def apply(rgb: np.ndarray, profile: dict) -> np.ndarray:
+def apply(rgb: np.ndarray, look: Look) -> np.ndarray:
     """Apply an imported LUT profile to display-sRGB rgb."""
-    table, low, high = _table(profile['path'])
+    table, low, high = _table(look.params['path'])
     return apply_lut3d((rgb-low)/(high-low), table)
 
 

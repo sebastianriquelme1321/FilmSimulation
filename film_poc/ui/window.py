@@ -344,12 +344,12 @@ class Window(QMainWindow):
         info = metadata(name)
         self.details.setText(info['label'] + '\n' + info['detail'])
         self.after_title.setText('CON PELÍCULA · ' + info['label'].upper())
-        if LOOKS[name].get('backend') == 'recipe':
+        if LOOKS[name].backend == 'recipe':
             _, values = edit_settings(name)
             self.adjustments.set_values(values['exposure_ev'], values['temperature'],
                                         values['intensity'])
             self.grain.blockSignals(True)
-            self.grain.setCurrentText(LOOKS[name]['recipe'].get('grain', 'Desactivado'))
+            self.grain.setCurrentText(LOOKS[name].params['recipe'].get('grain', 'Desactivado'))
             self.grain.blockSignals(False)
         self.save_button.setEnabled(not self.busy and self.linear is not None)
         self.render()

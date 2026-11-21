@@ -6,12 +6,11 @@ backend lives in its own module of this package and registers itself on import; 
 """
 from collections.abc import Iterator, MutableMapping
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Protocol
 
 import numpy as np
 
 DEFAULT_BACKEND = 'fuji'
-_FIELDS = ('display_name', 'backend', 'origin', 'detail')
 
 
 def display_rgb(linear: np.ndarray) -> np.ndarray:
@@ -22,32 +21,16 @@ def display_rgb(linear: np.ndarray) -> np.ndarray:
 
 @dataclass
 class Look:
-    """One selectable look. Also readable like the legacy profile dict."""
+    """One selectable look."""
     display_name: str
     backend: str | None = None  # None means the default (fuji) backend
     origin: str = ''
     detail: str = ''
     params: dict = field(default_factory=dict)  # backend-specific data
 
-    @classmethod
-    def from_profile(cls, profile: dict) -> 'Look':
-        known = {k: profile[k] for k in _FIELDS if k in profile}
-        return cls(params={k: v for k, v in profile.items() if k not in _FIELDS}, **known)
-
     @property
     def backend_id(self) -> str:
         return self.backend or DEFAULT_BACKEND
-
-    def __getitem__(self, key: str) -> Any:
-        if key in _FIELDS:
-            return getattr(self, key)
-        return self.params[key]
-
-    def get(self, key: str, default: Any = None) -> Any:
-        try:
-            return self[key]
-        except KeyError:
-            return default
 
 
 class LookBackend(Protocol):
@@ -73,8 +56,8 @@ class LookRegistry(MutableMapping):
     def __getitem__(self, name: str) -> Look:
         return self._looks[name]
 
-    def __setitem__(self, name: str, look: Look | dict) -> None:
-        self._looks[name] = look if isinstance(look, Look) else Look.from_profile(look)
+    def __setitem__(self, name: str, look: Look) -> None:
+        self._looks[name] = look
 
     def __delitem__(self, name: str) -> None:
         del self._looks[name]

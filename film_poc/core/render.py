@@ -15,8 +15,7 @@ PIPELINE_VERSION = 'v4.1-base-adjustments-mix'
 
 def look_slug(name: str) -> str:
     """Return a filesystem-safe slug for the look's display name."""
-    profile = LOOKS[name]
-    return re.sub(r'[^a-z0-9]+', '_', profile['display_name'].lower()).strip('_')
+    return re.sub(r'[^a-z0-9]+', '_', LOOKS[name].display_name.lower()).strip('_')
 
 
 def render_base(linear: np.ndarray) -> np.ndarray:
@@ -38,8 +37,8 @@ class EditSettings(NamedTuple):
 def edit_settings(name: str, exposure_ev: float | None = None, temperature: float | None = None,
                   intensity: float | None = None) -> EditSettings:
     """Resolve and validate edit values (recipe defaults fill in omitted ones)."""
-    profile = LOOKS[name]
-    recipe = profile.get('recipe', {}) if profile.get('backend') == 'recipe' else {}
+    look = LOOKS[name]
+    recipe = look.params['recipe'] if look.backend == 'recipe' else {}
     values = {'exposure_ev': recipe.get('exposure_ev', 0) if exposure_ev is None else exposure_ev,
               'temperature': recipe.get('temperature', 0) if temperature is None else temperature,
               'intensity': recipe.get('strength', 1) if intensity is None else intensity}
