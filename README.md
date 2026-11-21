@@ -1,70 +1,112 @@
 # FilmSimulation
 
-Aplicación de escritorio experimental para revelar RAW Sony y aplicar aproximaciones de película. Incluye 31 looks, filtros por origen, un visor con zoom y comparación antes/después, ajustes de exposición, color y grano, y exportación JPEG sRGB. Los nombres comerciales identifican el look buscado; no son perfiles oficiales.
+[![Latest release](https://img.shields.io/github/v/release/sebastianriquelme1321/FilmSimulation?include_prereleases&label=release)](https://github.com/sebastianriquelme1321/FilmSimulation/releases/latest)
+[![License: GPL v3](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![Checks](https://github.com/sebastianriquelme1321/FilmSimulation/actions/workflows/tests.yml/badge.svg)](https://github.com/sebastianriquelme1321/FilmSimulation/actions/workflows/tests.yml)
 
-![Tema Taller neutro](docs/images/workshop.png)
+**English** · [Español](README.es.md)
 
-![Tema Vidrio y luz](docs/images/glass.png)
+A free, open-source desktop app to develop RAW photos and apply film simulations. **Everything runs on your machine: no accounts, no cloud, no telemetry.** It ships 31 looks, a viewer with zoom and a before/after divider, adjustments for exposure, color and grain, shareable recipes, your own LUTs, and full-resolution JPEG export. Film names only describe the look being approximated; these are not official profiles.
 
-(Capturas generadas con una foto sintética; no incluyen fotografías reales.)
+> **Beta.** Verified with real Sony ARW files. Other RAW formats are supported through LibRaw but untested (see [Known limitations](#known-limitations)). Feedback is very welcome.
 
-## Funciones
+![Neutral workshop theme](docs/images/workshop.png)
 
-- Tres columnas: películas (looks) a la izquierda, visor en el centro y ajustes a la derecha.
-- Importar un RAW con el botón **Importar RAW** o arrastrándolo sobre la ventana.
-- Visor con zoom, desplazamiento y divisor antes/después arrastrable.
-- Ajustes previos al look: exposición, temperatura, contraste, saturación y tinte; intensidad del look y grano.
-- Biblioteca local de LUT `.cube`, HaldCLUT y recetas JSON.
-- Exportación de JPEG procesado o de un ZIP con el RAW original y los ajustes.
-- Dos temas: **Taller neutro** (predeterminado) y **Vidrio y luz**.
-- Decodificación RAW basada en LibRaw para muchas marcas (Sony ARW verificado; el resto experimental) y decodificadores enchufables.
+![Glass and light theme](docs/images/glass.png)
 
-## Instalar y ejecutar
+(Screenshots use a synthetic photo; they do not include real photographs.)
 
-Requiere Python 3.12 o 3.13 de 64 bits. En Windows: `py -3.12 launch.py`. En macOS: `python3.12 launch.py`. El iniciador crea un entorno virtual e instala las dependencias. Después pueden usarse `Iniciar.cmd` o `bash Iniciar.command`.
+## Download
 
-macOS necesita versión 14 o posterior. Intel usa rawpy 0.25.1 y Apple Silicon 0.27.1; la compatibilidad en macOS debe confirmarse con pruebas reales. Este repositorio contiene fuentes, no un instalador firmado.
+Get the latest beta from [**Releases**](https://github.com/sebastianriquelme1321/FilmSimulation/releases/latest):
 
-## Uso
-
-1. Importa un RAW (botón **Importar RAW** o arrastrar y soltar un `.ARW` sobre la ventana).
-2. Elige una película en la columna izquierda: clic en la tarjeta o Enter. Recorrer con las flechas no la aplica.
-3. Ajusta exposición, temperatura, contraste, saturación, tinte, intensidad y grano en la columna derecha. **Restablecer ajustes** vuelve todo a neutro (mantiene película y grano).
-4. Exporta con el selector y el botón **Exportar**. El diálogo propone la carpeta de la última exportación (o, la primera vez, la de la foto) y puedes elegir otra; la elección se recuerda.
-
-**Visor.** Botones **Dividido**, **Antes** y **Después**; el selector **Fondo** cambia el color neutro alrededor de la foto (Gris, Negro, Blanco) y se recuerda al reabrir la aplicación.
-
-| Acción | Gesto o tecla |
+| System | File |
 | --- | --- |
-| Acercar / alejar | Rueda del ratón o gesto de desplazamiento del trackpad (alrededor del cursor); teclas `+` / `-` |
-| Desplazar | Arrastrar con zoom aplicado |
-| Mover el divisor | Arrastrar la línea blanca; flechas ←/→ (2 % por pulsación) en modo Dividido |
-| Ajustar a la ventana | Tecla `0` o botón **Ajustar** |
-| Tamaño 100 % | Tecla `1` o botón **100 %** |
-| Alternar ajustar / 100 % | Doble clic sobre la foto |
-| Exportar | `Cmd+E` (macOS) / `Ctrl+E` (Windows) o botón **Exportar** |
+| macOS, Apple Silicon (M1 or later) | `FilmSimulation-macos-arm64.zip` |
+| macOS, Intel | `FilmSimulation-macos-x86_64.zip` |
+| Windows 64-bit | `FilmSimulation-windows-x64.zip` |
 
-El visor necesita el foco (haz clic sobre él) para recibir las teclas. En el control de exposición, las flechas cambian 0,1 EV y RePág/AvPág 0,5 EV; también se puede escribir un valor exacto.
+**The apps are not code-signed.** On macOS: unzip, drag `FilmSimulation.app` to *Applications*, and the first time right-click it → **Open** → **Open** (if it is still blocked: `xattr -dr com.apple.quarantine /Applications/FilmSimulation.app`). On Windows: run `FilmSimulation.exe`; if SmartScreen appears, choose **More info → Run anyway**.
 
-**Importante:** el visor trabaja sobre una vista previa de hasta 1280 px de lado largo, así que “100 %” se refiere a esa vista previa y no a los píxeles del RAW. La exportación sí usa la resolución completa.
+The Windows build compiles and passes the automated tests, but it has not been tried by hand yet. If you try it, please tell me how it went.
 
-## Biblioteca local
+## Features
 
-“Añadir LUT o receta” acepta LUT 3D `.cube` (2–65 puntos por eje), HaldCLUT PNG y recetas JSON versión 1. Las LUT deben esperar entrada sRGB; no se detectan ni convierten espacios Log. No se ejecuta código importado. “Guardar receta” guarda una combinación de look, ajustes, intensidad y grano; las recetas de ajustes JPEG de cámara no son directamente compatibles.
+- Three columns: films (looks) on the left, the viewer in the center, adjustments on the right.
+- Import a RAW with the **Importar RAW** button or by dragging it onto the window.
+- Viewer with zoom, pan and a draggable before/after divider.
+- Adjustments before the look: exposure, temperature, contrast, saturation and tint; look strength and grain.
+- Local library of `.cube` LUTs, HaldCLUTs and JSON recipes.
+- Export a processed JPEG, or a ZIP with the original RAW plus your settings.
+- Two themes: **Taller neutro** (neutral workshop, the default) and **Vidrio y luz** (glass and light).
+- LibRaw-based RAW decoding for many brands (Sony ARW verified, the rest experimental) with pluggable decoders.
 
-### Formato de receta (versión 1)
+> The interface is currently in Spanish.
 
-JSON con estas claves (cualquier otra se rechaza). Obligatorias: `version` (siempre `1`), `name` y `base_look` (nombre interno de un look instalado, p. ej. `Velvia/Vivid (aproximación)`, que no sea otra receta). Opcionales: `author`, `source`, `license` (texto, hasta 500 caracteres), `input_space` (solo `"sRGB"`), `strength` (intensidad, 0–1; por defecto 1), `grain` (uno de los valores del selector de grano; por defecto `"Desactivado"`), `exposure_ev` (−3 a 3), `temperature` (−100 a 100), y `contrast`, `saturation` y `tint` (−100 a 100, neutro en 0; si faltan se asume 0, de modo que las recetas antiguas siguen siendo válidas).
+## Usage
+
+1. Import a RAW (the **Importar RAW** button, or drag and drop a file onto the window).
+2. Pick a film in the left column: click a card or press Enter. Moving through the list with the arrow keys does not apply it.
+3. Adjust exposure, temperature, contrast, saturation, tint, strength and grain on the right. **Restablecer ajustes** (reset) returns everything to neutral, keeping the film and the grain.
+4. Export with the format selector and the **Exportar** button. The dialog suggests the folder of your last export (or, the first time, the photo's folder) and you can pick another; your choice is remembered.
+
+**Viewer.** The **Dividido**, **Antes** and **Después** buttons switch between the divider, the base only and the film look only. The **Fondo** selector changes the neutral color around the photo (Gris, Negro, Blanco) and is remembered between sessions.
+
+| Action | Gesture or key |
+| --- | --- |
+| Zoom in / out | Mouse wheel or trackpad scroll (around the cursor); `+` / `-` keys |
+| Pan | Drag while zoomed in |
+| Move the divider | Drag the white line; ←/→ arrows (2 % per press) in split mode |
+| Fit to window | `0` key or the **Ajustar** button |
+| 100 % size | `1` key or the **100 %** button |
+| Toggle fit / 100 % | Double-click the photo |
+| Export | `Cmd+E` (macOS) / `Ctrl+E` (Windows) or the **Exportar** button |
+
+The viewer needs focus (click it) to receive key presses. In the exposure control the arrow keys change 0.1 EV and PageUp/PageDown 0.5 EV; you can also type an exact value.
+
+**Important:** the viewer works on a preview of up to 1280 px on the long side, so “100 %” refers to that preview, not to the RAW's pixels. Export does use the full resolution.
+
+## Local library
+
+“Add LUT or recipe” accepts 3D `.cube` LUTs (2–65 points per axis), HaldCLUT PNGs and version-1 JSON recipes. LUTs must expect sRGB input; Log spaces are not detected or converted. Imported code is never executed. “Save recipe” stores a combination of look, adjustments, strength and grain; in-camera JPEG recipes are not directly compatible.
+
+### Recipe format (version 1)
+
+JSON with these keys (any other key is rejected). Required: `version` (always `1`), `name` and `base_look` (the internal name of an installed look, e.g. `Velvia/Vivid (aproximación)`, which cannot be another recipe). Optional: `author`, `source`, `license` (text, up to 500 characters), `input_space` (only `"sRGB"`), `strength` (look strength, 0–1; default 1), `grain` (one of the values of the grain selector; default `"Desactivado"`), `exposure_ev` (−3 to 3), `temperature` (−100 to 100), and `contrast`, `saturation` and `tint` (−100 to 100, neutral at 0; if absent they are 0, so older recipes stay valid).
 
 ```json
-{"version": 1, "name": "Mi receta", "base_look": "Velvia/Vivid (aproximación)", "strength": 0.8,
+{"version": 1, "name": "My recipe", "base_look": "Velvia/Vivid (aproximación)", "strength": 0.8,
  "grain": "Desactivado", "exposure_ev": 0.3, "temperature": 10,
  "contrast": 15, "saturation": -10, "tint": 0}
 ```
 
-La biblioteca se guarda fuera del repositorio: `%LOCALAPPDATA%/FilmPOC` en Windows y `~/Library/Application Support/FilmPOC` en macOS. La referencia de las tarjetas es una ilustración generada por código. Los archivos importados y las fotos del usuario no forman parte del proyecto.
+The library is stored outside the repository: `%LOCALAPPDATA%/FilmPOC` on Windows and `~/Library/Application Support/FilmPOC` on macOS. The reference on the cards is an illustration generated by code. Imported files and users' photos are not part of the project.
 
-## Desarrollo
+## Adjustments and RAW preservation
+
+Exposure (−3 to +3 EV), relative temperature and tint, contrast and saturation (−100 to 100, neutral at 0) are applied in linear RGB before sRGB encoding and before the look. Temperature is a cool/warm correction relative to the camera white balance, not a Kelvin-calibrated sensor setting; tint shifts between green and magenta; contrast works around mid-gray. Strength blends the adjusted base and the simulation in sRGB; grain is applied afterwards. The preview and the export use the same pipeline. These adjustments cannot recover information that the initial development already clipped.
+
+The export selector offers **JPEG procesado** (processed JPEG) or **RAW original + ajustes (.zip)**. The ZIP keeps the ARW byte for byte with its original metadata, a JSON recipe, a SHA-256 checksum and the local LUT when applicable. It does not modify the sensor mosaic or bake the look into the ARW. To restore: extract the archive, import the ARW and add `edit.recipe.json` to the library. If it includes `library/`, copy its contents into the local library and restart before importing the recipe. Other editors do not interpret this format automatically. Processed DNG export is not available.
+
+The included profiles and imported LUTs work with sRGB input. There is no automatic conversion from Rec.709, S-Log or other Log curves; a gamma selector alone would not fix primaries, gamut or a LUT's reference exposure.
+
+## Navigation and performance
+
+Searching, changing the origin filter or moving through cards with the arrow keys does not apply a film; click a card or confirm with Enter. The active simulation is kept even if it falls outside the filter; importing a photo with no film selected shows only the adjusted base.
+
+References are prepared in the background. Decoded tables are stored in a disposable local cache inside the library; the first preparation can take longer, and a missing or damaged cache is simply recomputed. Previews use at most 1280 px on the long side and a separate thread with a single pending request: when you move controls quickly, the latest setting wins. The base and the simulation are reused when you change strength or grain. Export keeps the original resolution and the same color pipeline; it does not use the reduced preview pixels.
+
+## Appearance
+
+The **Tema** selector, at the bottom right, switches between **Taller neutro** (default: neutral grays and a single blue accent) and **Vidrio y luz** (translucent panels, amber accent and an ambient background derived from the photo). The preference is stored locally. In both themes the photo viewer uses a neutral backdrop (Gris by default, or Negro/Blanco). Changing the theme does not reprocess or alter the exported image.
+
+## Run from source
+
+Requires 64-bit Python 3.12 or 3.13. On Windows: `py -3.12 launch.py`. On macOS: `python3.12 launch.py`. The launcher creates a virtual environment and installs the dependencies. Afterwards you can use `Iniciar.cmd` or `bash Iniciar.command`.
+
+macOS 14 or later is required. Intel uses rawpy 0.25.1 and Apple Silicon 0.27.1; macOS compatibility still needs confirming with real-world testing.
+
+## Development
 
 ```sh
 python -m pip install -e ".[dev]"
@@ -72,65 +114,52 @@ QT_QPA_PLATFORM=offscreen python -m pytest -q
 python -m build
 ```
 
-**Estructura.** El paquete `film_poc/` está en capas (`core`, `adapters`, `services`, `ui`) con una regla de dependencias comprobada por las pruebas. Ver [CONTRIBUTING.md](CONTRIBUTING.md).
+**Structure.** The `film_poc/` package is layered (`core`, `adapters`, `services`, `ui`) with a dependency rule enforced by the tests. See [CONTRIBUTING.md](CONTRIBUTING.md) (in Spanish).
 
-Comprobaciones antes de enviar cambios: `ruff check .` (longitud de línea 100) y `QT_QPA_PLATFORM=offscreen python -m pytest -q`.
+Checks before sending changes: `ruff check .` (line length 100) and `QT_QPA_PLATFORM=offscreen python -m pytest -q`.
 
-**Ejecutable.** Para generar `FilmSimulation.app` (macOS) o `FilmSimulation.exe` (Windows) con PyInstaller:
+**Executable.** To build `FilmSimulation.app` (macOS) or `FilmSimulation.exe` (Windows) with PyInstaller:
 
 ```sh
 python -m pip install -e ".[dev]"
-pyinstaller --noconfirm packaging/film-poc.spec   # resultado en dist/
+pyinstaller --noconfirm packaging/film-poc.spec   # output in dist/
 ```
 
-Cada sistema (y, en macOS, cada arquitectura) debe compilarse en su propio equipo. Al subir una etiqueta `v*`, el workflow `release.yml` compila Windows, macOS arm64 y macOS Intel y adjunta los ZIP a un GitHub Release. Detalles en [packaging/README.md](packaging/README.md).
+Each system (and, on macOS, each architecture) must be built on its own machine. Pushing a `v*` tag makes the `release.yml` workflow build Windows, macOS arm64 and macOS Intel and attach the ZIPs to a GitHub Release. Details in [packaging/README.md](packaging/README.md) (in Spanish).
 
-## Limitaciones conocidas
+## Known limitations
 
-- El zoom del visor opera sobre una vista previa de hasta 1280 px; “100 %” no equivale a los píxeles del RAW.
-- Solo Sony ARW se ha verificado con archivos reales. Las demás extensiones RAW (Canon, Nikon, Fujifilm, Panasonic, Olympus, Pentax, DNG, etc.) se decodifican con LibRaw y son **experimentales**, sin probar; si tu modelo no abre, reporta la cámara desde Ayuda > Enviar feedback. Si el RAW no trae previsualización incrustada, se revela sin igualar el tono de la cámara. Más detalle en [CONTRIBUTING.md](CONTRIBUTING.md).
-- Las aplicaciones empaquetadas no están firmadas ni notarizadas por Apple ni Microsoft: macOS (Gatekeeper) y Windows (SmartScreen) mostrarán un aviso la primera vez; ver [packaging/README.md](packaging/README.md).
-- La compatibilidad en macOS debe confirmarse con pruebas reales; las LUT esperan entrada sRGB.
-- Las simulaciones son aproximaciones, sin equivalencia garantizada con cámaras o película reales.
+- The viewer zoom works on a preview of up to 1280 px; “100 %” is not the same as the RAW's pixels.
+- Only Sony ARW has been verified with real files. The other RAW extensions (Canon, Nikon, Fujifilm, Panasonic, Olympus, Pentax, DNG, etc.) are decoded with LibRaw and are **experimental** and untested; if your camera model does not open, report it from Ayuda > Enviar feedback (Help > Send feedback). If the RAW has no embedded preview, it is developed without matching the camera's tone. More detail in [CONTRIBUTING.md](CONTRIBUTING.md).
+- The packaged apps are not signed or notarized by Apple or Microsoft: macOS (Gatekeeper) and Windows (SmartScreen) show a warning the first time; see [packaging/README.md](packaging/README.md).
+- macOS compatibility still needs confirming with real-world testing; LUTs expect sRGB input.
+- The simulations are approximations, with no guaranteed equivalence to real cameras or film.
+- The interface is in Spanish only for now.
 
-El revelado usa rawpy/LibRaw y toma la miniatura de cámara como guía tonal cuando está disponible. Las simulaciones son aproximaciones y dependen del revelado y la escena. La exportación conserva resolución y añade un perfil ICC sRGB. No hay calibración colorimétrica ni equivalencia garantizada con cámaras Fujifilm o película analógica.
+RAW development uses rawpy/LibRaw and takes the camera thumbnail as a tonal guide when available. The simulations are approximations and depend on the development and the scene. Export keeps the resolution and embeds an sRGB ICC profile. There is no colorimetric calibration or guaranteed equivalence to Fujifilm cameras or analog film.
 
-## Feedback y soporte
+## Feedback and support
 
-Es una beta gratuita y tu opinión importa. Usa **Ayuda > Enviar feedback…** o **Ayuda > Reportar un problema…**: se abre tu navegador con un formulario de GitHub ya rellenado con la versión y el sistema (sin rutas de archivos ni nombre de usuario) y, en el caso de un problema, el final del registro; revisa el texto y envíalo tú. **Ayuda > Copiar información del sistema** lo deja en el portapapeles.
+This is a free beta and your opinion matters. Use **Ayuda > Enviar feedback…** (Help > Send feedback) or **Ayuda > Reportar un problema…** (Help > Report a problem): your browser opens a GitHub form already filled in with the version and system (no file paths or user name) and, for a problem, the end of the log. Review the text and send it yourself. **Ayuda > Copiar información del sistema** puts it on the clipboard.
 
-El registro (`film_poc.log`, rotativo, sin rutas completas) se guarda en la carpeta `logs` de la biblioteca local; **Ayuda > Abrir carpeta de registros** la abre:
+If a file does not open, please include **your camera make and model** and the RAW format (CR3, NEF, RAF…): that is the most useful report.
+
+The log (`film_poc.log`, rotating, no full paths) is stored in the `logs` folder of the local library; **Ayuda > Abrir carpeta de registros** opens it:
 
 - macOS: `~/Library/Application Support/FilmPOC/logs`
 - Windows: `%LOCALAPPDATA%\FilmPOC\logs`
 - Linux: `~/.local/share/FilmPOC/logs`
 
-Privacidad: no hay telemetría ni código de red. La aplicación no envía nada; los menús solo abren tu navegador o copian texto.
+Privacy: there is no telemetry and no network code. The app sends nothing; the menus only open your browser or copy text.
 
-## Aviso
+You can also open an [issue](https://github.com/sebastianriquelme1321/FilmSimulation/issues/new/choose) or start a [discussion](https://github.com/sebastianriquelme1321/FilmSimulation/discussions).
 
-Proyecto independiente, sin afiliación ni respaldo de Kodak, Fujifilm, Ilford u otras marcas citadas. Los nombres de películas se usan solo para describir qué se aproxima. Los looks son aproximaciones y no equivalen a los procesos originales. Todo se procesa en tu equipo; la aplicación no envía datos.
+## Disclaimer
 
-## Licencias
+An independent project, not affiliated with or endorsed by Kodak, Fujifilm, Ilford or any other brand mentioned. Film names are used only to describe what is being approximated. The looks are approximations and are not equivalent to the original processes. Everything is processed on your machine; the app sends no data.
 
-Código combinado GPL-3.0-or-later; porciones adaptadas conservan sus atribuciones. LUT de película CC BY-SA 4.0 con avisos específicos. Consultar `LICENSE`, `THIRD_PARTY_NOTICES.md` y `film_poc/assets/film-stocks/ATTRIBUTION.md`. FujiLUT declara MIT en su README, sin aviso de copyright independiente en la revisión utilizada; esa declaración se conserva literalmente.
+## Licenses
 
-Las únicas imágenes incluidas son tablas técnicas LUT necesarias para el procesamiento. Este repositorio no incluye fotografías de prueba, resultados, investigación ni conversaciones.
+Combined code is GPL-3.0-or-later; adapted portions keep their attributions. Film LUTs are CC BY-SA 4.0 with specific notices. See `LICENSE`, `THIRD_PARTY_NOTICES.md` and `film_poc/assets/film-stocks/ATTRIBUTION.md`. FujiLUT declares MIT in its README, with no separate copyright notice in the revision used; that declaration is preserved verbatim.
 
-## Ajustes y conservación del RAW
-
-La exposición (−3 a +3 EV), la temperatura relativa y el tinte, el contraste y la saturación (−100 a 100, neutro en 0) se aplican en RGB lineal antes de codificar sRGB y aplicar el look. La temperatura es una corrección frío/cálido sobre el balance de cámara, no un ajuste de sensor calibrado en Kelvin; el tinte desplaza entre verde y magenta; el contraste actúa alrededor del gris medio. La intensidad mezcla la base ajustada y la simulación en sRGB; el grano se aplica después. La vista previa y la exportación usan el mismo proceso. Estos ajustes no recuperan información que el revelado inicial ya haya recortado.
-
-El selector de exportación ofrece **JPEG procesado** o **RAW original + ajustes (.zip)**. El ZIP conserva el ARW byte por byte con sus metadatos originales, una receta JSON, un checksum SHA-256 y la LUT local cuando corresponde. No modifica el mosaico del sensor ni incorpora el look en el ARW. Para restaurar: extraer el archivo, importar el ARW y añadir `edit.recipe.json` a la biblioteca. Si incluye `library/`, copiar su contenido a la biblioteca local y reiniciar antes de importar la receta. Otros editores no interpretan automáticamente este formato. No se exporta DNG procesado.
-
-Los perfiles incluidos y las LUT importadas trabajan con entrada sRGB. No hay conversión automática de Rec.709, S-Log u otras curvas Log; un selector de gamma por sí solo no corrige primarias, gamut ni la exposición de referencia de una LUT.
-
-## Navegación y rendimiento
-
-Buscar, cambiar de origen o recorrer tarjetas con las flechas no aplica una película. Haz clic en una tarjeta o confirma con Enter. La simulación activa se conserva aunque quede fuera del filtro; al importar una foto sin película seleccionada se muestra únicamente la base ajustada.
-
-Las referencias se preparan en segundo plano. Las tablas decodificadas se guardan en una caché local descartable dentro de la biblioteca; la primera preparación puede tardar más. Si la caché falta o está dañada, se vuelve a calcular. Las vistas previas usan un máximo de 1280 píxeles de lado largo y un hilo independiente con una sola petición pendiente: al cambiar controles rápidamente se conserva el último ajuste. La base y la simulación se reutilizan al variar intensidad o grano. La exportación conserva la resolución original y el mismo proceso de color; no usa los píxeles reducidos de la previsualización.
-
-## Apariencia
-
-El selector **Tema**, en la esquina inferior derecha, alterna entre **Taller neutro** (predeterminado: grises neutros y un único acento azul) y **Vidrio y luz** (paneles translúcidos, acento ámbar y fondo ambiental derivado de la foto). La preferencia se conserva localmente. El visor de la fotografía usa un fondo neutro (Gris por defecto, o Negro/Blanco) en ambos temas. Cambiar de tema no reprocesa ni modifica la imagen exportada. El fondo ambiental se difumina a baja resolución y se reutiliza al mover los controles.
+The only images included are technical LUT tables needed for processing. This repository does not include test photographs, results, research or conversations.
