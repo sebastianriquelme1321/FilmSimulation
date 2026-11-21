@@ -1,7 +1,7 @@
 """Approximate film stocks rendered through bundled HaldCLUT tables."""
 import numpy as np
 
-from .. import film_stocks
+from ... import film_stocks
 from .base import Look, display_rgb, registry
 
 

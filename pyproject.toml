@@ -28,10 +28,11 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
+extend-exclude = ["film_poc/core/profiles.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B"]
 
 [tool.ruff.lint.per-file-ignores]
-"film_poc/profile_transforms.py" = ["E501", "E741"]
+"film_poc/core/profile_transforms.py" = ["E501", "E741"]
 "film_poc/theme.py" = ["E501"]

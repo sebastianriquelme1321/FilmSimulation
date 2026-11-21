@@ -1,8 +1,8 @@
 from copy import deepcopy
 import numpy as np
 from film_poc.engine import LOOKS, apply_look, render_base
-from film_poc.profiles import PROFILES
-from film_poc.profile_transforms import (_hue_weight, apply_film_simulation,
+from film_poc.core.profiles import PROFILES
+from film_poc.core.profile_transforms import (_hue_weight, apply_film_simulation,
                                          apply_base_saturation)
 
 

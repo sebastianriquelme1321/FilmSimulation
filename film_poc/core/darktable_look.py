@@ -15,9 +15,10 @@ from pathlib import Path
 import numpy as np
 from scipy.interpolate import RBFInterpolator, RegularGridInterpolator
 
-from .cache import cached_array
+from ..cache import cached_array
 from .lut3d import apply_lut3d
 
+_DATA=Path(__file__).parents[1]/'assets'/'darktable'
 NAME = 'Classic Chrome · darktable (experimental)'
 PRESETS = {'chrome': 'Classic Chrome', 'astia': 'Astia', 'mchrome': 'Monochrome',
            'provia': 'Provia', 'velvia': 'Velvia'}
@@ -51,7 +52,7 @@ def from_lab(lab):
 def patches(preset='chrome'):
     if preset not in PRESETS:
         raise ValueError(f'Unknown darktable preset: {preset}')
-    data=json.loads(Path(__file__).with_name(f'darktable_{preset}.json').read_text(encoding='utf-8'))
+    data=json.loads((_DATA/f'darktable_{preset}.json').read_text(encoding='utf-8'))
     return np.array(data['source']),np.array(data['target'])
 
 
@@ -76,7 +77,7 @@ def lut(preset='chrome'):
         for i in range(len(axis)):
             values[i]=direct(grid[i],preset)
         return values
-    token=hashlib.sha256(Path(__file__).read_bytes()+Path(__file__).with_name(f'darktable_{preset}.json').read_bytes()).hexdigest()
+    token=hashlib.sha256(Path(__file__).read_bytes()+(_DATA/f'darktable_{preset}.json').read_bytes()).hexdigest()
     values=cached_array('darktable',token,build,(49,49,49,3))
     return RegularGridInterpolator((axis,axis,axis),values,bounds_error=True)
 

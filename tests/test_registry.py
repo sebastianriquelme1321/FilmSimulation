@@ -3,7 +3,7 @@ import pytest
 
 from film_poc import engine
 from film_poc.catalog import metadata
-from film_poc.looks.base import Look, LookRegistry
+from film_poc.core.looks.base import Look, LookRegistry
 
 
 class Invert:

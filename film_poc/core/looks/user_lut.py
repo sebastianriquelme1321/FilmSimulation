@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .. import user_library
+from ... import user_library
 from .base import display_rgb, registry
 
 

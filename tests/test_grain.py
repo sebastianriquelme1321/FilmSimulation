@@ -1,5 +1,5 @@
 import numpy as np
-from film_poc.grain import apply_grain
+from film_poc.core.grain import apply_grain
 
 
 def test_disabled_preserves_pixels_and_enabled_is_monochromatic():

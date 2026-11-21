@@ -11,10 +11,10 @@ from pathlib import Path
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
+from .core.grain import GRAIN
+from .core.lut3d import apply_lut3d
 from .fileio import atomic_path
-from .grain import GRAIN
 from .hald_loader import load_hald
-from .lut3d import apply_lut3d
 
 MAX_BYTES=16*1024*1024
 
@@ -118,7 +118,7 @@ def validate_recipe(data: dict, registry: dict) -> dict:
         raise ValueError('Grano de receta inválido.')
     if not isinstance(data.get('name'),str) or not data['name'].strip():
         raise ValueError('La receta necesita un nombre.')
-    from .adjustments import validate
+    from .core.adjustments import validate
     validate(data.get('exposure_ev',0),data.get('temperature',0),strength)
     return data
 

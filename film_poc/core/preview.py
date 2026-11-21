@@ -1,7 +1,8 @@
 """Bounded single-preview cache. Owned and used by one preview worker at a time."""
 import numpy as np
 
-from . import adjustments, engine
+from .. import engine
+from . import adjustments
 from .grain import apply_grain
 
 

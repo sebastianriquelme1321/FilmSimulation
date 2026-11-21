@@ -7,8 +7,8 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
 from .cache import cached_array
+from .core.lut3d import apply_lut3d
 from .hald_loader import load_hald
-from .lut3d import apply_lut3d
 
 ASSETS = Path(__file__).parent/'assets'/'film-stocks'
 STOCKS = json.loads((ASSETS/'manifest.json').read_text(encoding='utf-8'))

@@ -4,9 +4,10 @@ import json
 import zipfile
 import numpy as np
 import pytest
-from film_poc import adjustments, engine, user_library
+from film_poc import engine, user_library
+from film_poc.core import adjustments
 from film_poc.raw_export import export_raw_bundle
-from film_poc.grain import apply_grain
+from film_poc.core.grain import apply_grain
 
 
 def test_exposure_temperature_and_input_preservation():
