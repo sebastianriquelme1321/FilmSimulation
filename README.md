@@ -32,7 +32,7 @@ macOS necesita versión 14 o posterior. Intel usa rawpy 0.25.1 y Apple Silicon 0
 3. Ajusta exposición, temperatura, contraste, saturación, tinte, intensidad y grano en la columna derecha. **Restablecer ajustes** vuelve todo a neutro (mantiene película y grano).
 4. Exporta con el selector y el botón **Exportar**.
 
-**Visor.** Botones **Dividido**, **Antes** y **Después**; el selector **Fondo** cambia el color neutro alrededor de la foto (Gris, Negro, Blanco).
+**Visor.** Botones **Dividido**, **Antes** y **Después**; el selector **Fondo** cambia el color neutro alrededor de la foto (Gris, Negro, Blanco) y se recuerda al reabrir la aplicación.
 
 | Acción | Gesto o tecla |
 | --- | --- |
@@ -42,6 +42,7 @@ macOS necesita versión 14 o posterior. Intel usa rawpy 0.25.1 y Apple Silicon 0
 | Ajustar a la ventana | Tecla `0` o botón **Ajustar** |
 | Tamaño 100 % | Tecla `1` o botón **100 %** |
 | Alternar ajustar / 100 % | Doble clic sobre la foto |
+| Exportar | `Cmd+E` (macOS) / `Ctrl+E` (Windows) o botón **Exportar** |
 
 El visor necesita el foco (haz clic sobre él) para recibir las teclas. En el control de exposición, las flechas cambian 0,1 EV y RePág/AvPág 0,5 EV; también se puede escribir un valor exacto.
 
@@ -116,4 +117,4 @@ Las referencias se preparan en segundo plano. Las tablas decodificadas se guarda
 
 ## Apariencia
 
-El selector **Aspecto**, en la esquina inferior derecha, alterna entre **Taller neutro** (predeterminado: grises neutros y un único acento azul) y **Vidrio y luz** (paneles translúcidos, acento ámbar y fondo ambiental derivado de la foto). La preferencia se conserva localmente. El visor de la fotografía usa un fondo neutro (Gris por defecto, o Negro/Blanco) en ambos temas. Cambiar de tema no reprocesa ni modifica la imagen exportada. El fondo ambiental se difumina a baja resolución y se reutiliza al mover los controles.
+El selector **Tema**, en la esquina inferior derecha, alterna entre **Taller neutro** (predeterminado: grises neutros y un único acento azul) y **Vidrio y luz** (paneles translúcidos, acento ámbar y fondo ambiental derivado de la foto). La preferencia se conserva localmente. El visor de la fotografía usa un fondo neutro (Gris por defecto, o Negro/Blanco) en ambos temas. Cambiar de tema no reprocesa ni modifica la imagen exportada. El fondo ambiental se difumina a baja resolución y se reutiliza al mover los controles.
