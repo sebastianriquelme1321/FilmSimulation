@@ -1,4 +1,4 @@
-"""Presentation metadata and thumbnails for the extensible look registry."""
+"""Presentation metadata and reference thumbnails for the extensible look registry."""
 from functools import lru_cache
 
 import numpy as np
@@ -26,19 +26,6 @@ def filtered_names(origin='Todos los orígenes', query=''):
     return [name for name in LOOKS if
             (origin == 'Todos los orígenes' or metadata(name)['origin'] == origin) and
             (not query or query in (name+' '+metadata(name)['origin']).casefold())]
-
-
-def thumbnails(linear):
-    """Small versions of the user's current image, without output grain.
-
-    Called in the import worker. No extra full-resolution frames are retained.
-    """
-    step = max(1, (max(linear.shape[:2])+239)//240)
-    small = np.ascontiguousarray(linear[::step,::step])
-    install()
-    # Runs in a worker: the UI starts it only while no look is being imported (busy/gallery_job
-    # guard), so LOOKS is stable; the snapshot keeps the iteration safe regardless.
-    return {name: uint8(apply_look(small,name)) for name in tuple(LOOKS)}
 
 
 @lru_cache(maxsize=1)
