@@ -12,7 +12,7 @@ license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 dependencies = ["numpy==2.5.4", "Pillow==13.0.0", "rawpy==0.27.1; sys_platform != 'darwin' or platform_machine != 'x86_64'", "rawpy==0.25.1; sys_platform == 'darwin' and platform_machine == 'x86_64'", "PySide6-Essentials==6.12.0", "scipy==1.18.1"]
 
 [project.optional-dependencies]
-dev = ["pytest>=9,<10", "build>=1.2"]
+dev = ["pytest>=9,<10", "build>=1.2", "ruff>=0.6", "pyinstaller>=6.10"]
 
 [project.gui-scripts]
 film-poc = "film_poc.ui:main"
@@ -21,7 +21,18 @@ film-poc = "film_poc.ui:main"
 include = ["film_poc*"]
 
 [tool.setuptools.package-data]
-film_poc = ["*.json", "assets/**/*"]
+film_poc = ["assets/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["film_poc/core/profiles.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"film_poc/core/profile_transforms.py" = ["E501", "E741"]
+"film_poc/ui/theme.py" = ["E501"]

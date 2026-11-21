@@ -1,5 +1,6 @@
 import numpy as np
-from film_poc.engine import apply_look
+
+from film_poc.core.render import apply_look
 
 
 def test_red_filter_favors_red_and_green_filter_favors_green():

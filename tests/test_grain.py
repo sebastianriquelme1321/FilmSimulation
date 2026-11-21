@@ -1,5 +1,6 @@
 import numpy as np
-from film_poc.grain import apply_grain
+
+from film_poc.core.grain import apply_grain
 
 
 def test_disabled_preserves_pixels_and_enabled_is_monochromatic():
@@ -23,7 +24,9 @@ def test_grain_matches_export_strips_and_preview_coordinates():
 
 def test_grain_is_in_exported_jpeg(tmp_path):
     from PIL import Image
-    from film_poc.engine import export_jpeg,LOOKS
+
+    from film_poc.core.render import LOOKS
+    from film_poc.services.export_jpeg import export_jpeg
     source=np.full((70,90,3),.18,dtype=np.float32)
     plain=tmp_path/'plain.jpg'
     grain=tmp_path/'grain.jpg'

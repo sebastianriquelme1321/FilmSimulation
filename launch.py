@@ -1,8 +1,8 @@
 """Portable first-run setup; run using Python 3.12 (Windows or macOS)."""
-from pathlib import Path
 import subprocess
 import sys
 import venv
+from pathlib import Path
 
 
 def main():

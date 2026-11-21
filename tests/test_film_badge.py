@@ -1,12 +1,14 @@
 import os
+
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
-from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QPixmap
-from film_poc.film_badge import add_canister
+from PySide6.QtWidgets import QApplication
+
+from film_poc.ui.film_badge import add_canister
 
 
 def test_canister_is_added_without_changing_reference():
-    app=QApplication.instance() or QApplication([])
+    QApplication.instance() or QApplication([])
     original=QPixmap(240,160)
     original.fill()
     before=original.toImage()

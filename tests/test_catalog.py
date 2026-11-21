@@ -1,9 +1,11 @@
 import os
+
 os.environ.setdefault('QT_QPA_PLATFORM','offscreen')
 import numpy as np
 from PySide6.QtWidgets import QApplication
-from film_poc.catalog import metadata,filtered_names,origins,reference_thumbnails
-from film_poc.engine import LOOKS
+
+from film_poc.core.render import LOOKS
+from film_poc.services.catalog import filtered_names, metadata, origins, reference_thumbnails
 from film_poc.ui import Window
 
 
@@ -17,23 +19,22 @@ def test_origin_groups_cover_catalog_without_overlap():
 
 
 def test_filter_selection_search_empty_and_thumbnail_integrity(tmp_path,wait_window):
-    app=QApplication.instance() or QApplication([])
+    QApplication.instance() or QApplication([])
     window=Window()
     wait_window(window)
     source=np.random.default_rng(19).random((40,60,3),dtype=np.float32)
     previews=reference_thumbnails()
     assert set(previews)==set(LOOKS)
-    original_icons=[window.gallery.item(i).icon().cacheKey() for i in range(31)]
-    window.loaded((tmp_path/'test.arw',source))
+    window.loaded(tmp_path/'test.arw',source)
     window.set_busy(False)
     assert window.gallery.count()==31
     assert all(not window.gallery.item(i).icon().isNull() for i in range(31))
     # The pixel buffers used by every card stay fixed across photo imports.
-    buffers={name: window.thumbs[name].cacheKey() for name in LOOKS}
-    window.loaded((tmp_path/'second.arw',np.zeros_like(source)))
-    assert buffers=={name: window.thumbs[name].cacheKey() for name in LOOKS}
+    buffers={name: window.gallery.thumbs[name].cacheKey() for name in LOOKS}
+    window.loaded(tmp_path/'second.arw',np.zeros_like(source))
+    assert buffers=={name: window.gallery.thumbs[name].cacheKey() for name in LOOKS}
     window.origin.setCurrentText('darktable')
-    assert window.look.count()==window.gallery.count()==5
+    assert window.gallery.look.count()==window.gallery.count()==5
     window.gallery.setCurrentRow(2)
     assert window.active_look is None
     window.gallery.itemClicked.emit(window.gallery.currentItem())
@@ -45,18 +46,10 @@ def test_filter_selection_search_empty_and_thumbnail_integrity(tmp_path,wait_win
     window.origin.setCurrentIndex(0)
     window.search.setText('Gold 200')
     assert window.gallery.count()==1
-    assert window.active_look==active and window.look.currentIndex()==-1
+    assert window.active_look==active and window.gallery.look.currentIndex()==-1
     window.gallery.itemClicked.emit(window.gallery.item(0))
     assert 'Gold 200' in window.active_look and window.save_button.isEnabled()
     assert 'spektrafilm' in window.details.text()
     wait_window(window)
     window.close()
 
-
-def test_import_does_not_generate_cards(monkeypatch,tmp_path):
-    from film_poc import ui
-    source=np.zeros((3,4,3),dtype=np.float32)
-    monkeypatch.setattr(ui,'decode',lambda path: source)
-    path=tmp_path/'sample.arw'
-    result=ui.load_photo(path)
-    assert len(result)==2 and result[0]==path and result[1] is source

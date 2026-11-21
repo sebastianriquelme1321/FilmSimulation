@@ -1,7 +1,9 @@
 import numpy as np
-from film_poc import engine, adjustments
-from film_poc.preview import PreviewPipeline
-from film_poc.grain import apply_grain
+
+from film_poc.core import adjustments
+from film_poc.core import render as engine
+from film_poc.core.grain import apply_grain
+from film_poc.core.preview import PreviewPipeline
 
 
 def test_cached_preview_matches_export_and_reuses_look(monkeypatch):
@@ -30,10 +32,11 @@ def test_cached_preview_matches_export_and_reuses_look(monkeypatch):
 
 def test_latest_preview_wins_without_blocking_ui(tmp_path,monkeypatch,wait_window):
     import threading
+
     from PySide6.QtWidgets import QApplication
-    from PySide6.QtTest import QTest
+
     from film_poc.ui import Window
-    app=QApplication.instance() or QApplication([])
+    QApplication.instance() or QApplication([])
     window=Window()
     wait_window(window)
     entered=threading.Event()
@@ -47,13 +50,13 @@ def test_latest_preview_wins_without_blocking_ui(tmp_path,monkeypatch,wait_windo
         pixels=np.full(source.shape,round(values['intensity']*255),dtype=np.uint8)
         return pixels,pixels
     monkeypatch.setattr(window.preview_pipeline,'render',slow)
-    window.loaded((tmp_path/'input.arw',np.full((20,30,3),.1,dtype=np.float32)))
+    window.loaded(tmp_path/'input.arw',np.full((20,30,3),.1,dtype=np.float32))
     assert entered.wait(3)
     for value in (20,30,40):
-        window.intensity.setValue(value)
+        window.adjustments.intensity.setValue(value)
         window.render()
     # The blocked worker has not prevented UI selection or queued 3 jobs.
-    assert window.intensity.value()==40 and len(calls)==1
+    assert window.adjustments.intensity.value()==40 and len(calls)==1
     release.set()
     wait_window(window)
     assert calls==[1,.4]
@@ -62,7 +65,7 @@ def test_latest_preview_wins_without_blocking_ui(tmp_path,monkeypatch,wait_windo
 
 
 def test_bad_disk_cache_is_rebuilt(tmp_path):
-    from film_poc.cache import cached_array
+    from film_poc.adapters.storage import cached_array
     calls=[]
     def build():
         calls.append(1)
@@ -78,10 +81,11 @@ def test_bad_disk_cache_is_rebuilt(tmp_path):
 
 def test_browsing_filters_does_not_apply_any_look(tmp_path,wait_window):
     from PySide6.QtWidgets import QApplication
+
     from film_poc.ui import Window
-    app=QApplication.instance() or QApplication([])
+    QApplication.instance() or QApplication([])
     window=Window()
-    window.loaded((tmp_path/'test.arw',np.full((20,30,3),.1,dtype=np.float32)))
+    window.loaded(tmp_path/'test.arw',np.full((20,30,3),.1,dtype=np.float32))
     wait_window(window)
     revision=window.preview_revision
     assert window.active_look is None and window.pixmaps[1] is None

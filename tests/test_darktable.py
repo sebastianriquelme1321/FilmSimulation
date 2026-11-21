@@ -1,7 +1,7 @@
 import numpy as np
-from film_poc.darktable_look import patches,mapping,to_lab,from_lab,direct,apply
-from film_poc.darktable_look import PRESETS
 import pytest
+
+from film_poc.core.darktable_look import PRESETS, apply, direct, from_lab, mapping, patches, to_lab
 
 
 @pytest.mark.parametrize('preset',PRESETS)

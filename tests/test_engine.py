@@ -1,12 +1,19 @@
 from pathlib import Path
+
 import numpy as np
 import pytest
+import rawpy
 from PIL import Image
-from film_poc.engine import LOOKS, apply_look, display_rgb, export_jpeg, decode
+
+from film_poc.core.looks.base import display_rgb
+from film_poc.core.render import LOOKS, apply_look
+from film_poc.services.develop import decode
+from film_poc.services.export_jpeg import export_jpeg
 
 
 def test_transfer():
-    np.testing.assert_allclose(display_rgb(np.array([0, .0031308, 1])), [0, .040449936, 1], atol=1e-6)
+    np.testing.assert_allclose(display_rgb(np.array([0, .0031308, 1])),
+                               [0, .040449936, 1], atol=1e-6)
 
 
 def test_looks_are_finite_distinct_and_do_not_mutate():
@@ -35,5 +42,5 @@ def test_jpeg_full_size_and_icc(tmp_path):
 def test_invalid_input():
     with pytest.raises(ValueError):
         decode(Path('sample.dng'))
-    with pytest.raises(Exception):
+    with pytest.raises(rawpy.LibRawIOError):
         decode(Path('missing.arw'))

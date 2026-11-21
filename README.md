@@ -18,9 +18,13 @@ La biblioteca se guarda fuera del repositorio: `%LOCALAPPDATA%/FilmPOC` en Windo
 
 ```sh
 python -m pip install -e ".[dev]"
-python -m pytest -q
+QT_QPA_PLATFORM=offscreen python -m pytest -q
 python -m build
 ```
+
+**Estructura.** El paquete `film_poc/` está en capas (`core`, `adapters`, `services`, `ui`) con una regla de dependencias comprobada por las pruebas. Ver [CONTRIBUTING.md](CONTRIBUTING.md).
+
+**Ejecutable.** Para generar `FilmSimulation.app` o `FilmSimulation.exe` con PyInstaller, ver [packaging/README.md](packaging/README.md).
 
 El revelado usa rawpy/LibRaw y toma la miniatura de cámara como guía tonal cuando está disponible. Las simulaciones son aproximaciones y dependen del revelado y la escena. La exportación conserva resolución y añade un perfil ICC sRGB. No hay calibración colorimétrica ni equivalencia garantizada con cámaras Fujifilm o película analógica.
 

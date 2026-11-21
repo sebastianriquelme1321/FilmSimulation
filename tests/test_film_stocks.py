@@ -1,8 +1,13 @@
 import hashlib
+
 import numpy as np
 from PIL import Image
-from film_poc.hald_loader import load_hald
-from film_poc.film_stocks import STOCKS,ASSETS,apply
+
+from film_poc.adapters.film_stock_files import ASSETS, manifest
+from film_poc.adapters.hald_loader import load_hald
+from film_poc.core.looks.film_stock import apply
+
+STOCKS=manifest()
 
 
 def test_packaged_files_match_recorded_hashes():
@@ -31,8 +36,10 @@ def test_film_stock_edges_and_strip_consistency():
 
 
 def test_png16_reader_retains_low_bytes(tmp_path):
-    import struct,zlib
-    from film_poc.hald_loader import _read_png16_rgb
+    import struct
+    import zlib
+
+    from film_poc.adapters.hald_loader import _read_png16_rgb
     pixels=np.array([[[257,512,65534],[1,32001,44003]]],dtype=np.uint16)
     def chunk(kind,data):
         return struct.pack('>I',len(data))+kind+data+struct.pack('>I',zlib.crc32(kind+data))

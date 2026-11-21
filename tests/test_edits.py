@@ -1,12 +1,20 @@
-from pathlib import Path
 import hashlib
 import json
 import zipfile
+from pathlib import Path
+
 import numpy as np
 import pytest
-from film_poc import adjustments, engine, user_library
-from film_poc.raw_export import export_raw_bundle
-from film_poc.grain import apply_grain
+from PIL import Image
+
+from film_poc.core import adjustments
+from film_poc.core import render as engine
+from film_poc.core.grain import apply_grain
+from film_poc.core.looks import user_lut
+from film_poc.core.looks.recipe import validate_recipe
+from film_poc.services import library
+from film_poc.services.export_bundle import export_raw_bundle
+from film_poc.services.export_jpeg import export_jpeg
 
 
 def test_exposure_temperature_and_input_preservation():
@@ -19,7 +27,8 @@ def test_exposure_temperature_and_input_preservation():
     assert cool[0,0,0]<cool[0,0,2]
     np.testing.assert_array_equal(source,copy)
     for values in ((float('nan'),0,1),(0,101,1),(0,0,2)):
-        with pytest.raises(ValueError): adjustments.validate(*values)
+        with pytest.raises(ValueError):
+            adjustments.validate(*values)
 
 
 def test_mix_endpoints_and_recipe_round_trip(tmp_path):
@@ -34,13 +43,14 @@ def test_mix_endpoints_and_recipe_round_trip(tmp_path):
             'temperature':20,'strength':.5}
     path=tmp_path/'recipe.json'
     path.write_text(json.dumps(recipe))
-    registry=engine.LOOKS.copy()
-    key=user_library.import_profile(path,registry)
+    registry=dict(engine.LOOKS)
+    key=library.import_profile(path,registry)
     engine.LOOKS[key]=registry[key]
     try:
         np.testing.assert_allclose(engine.render_edit(source,key)[1],half,atol=1e-7)
         np.testing.assert_allclose(engine.apply_look(source,key),half,atol=1e-7)
-    finally: engine.LOOKS.pop(key)
+    finally:
+        engine.LOOKS.pop(key)
 
 
 def test_export_strips_match_preview_pipeline(tmp_path,monkeypatch):
@@ -49,13 +59,13 @@ def test_export_strips_match_preview_pipeline(tmp_path,monkeypatch):
     _,preview=engine.render_edit(source,name,.4,-17,.6)
     expected=engine.uint8(apply_grain(preview,'Fuerte'))
     captured=[]
-    original=engine.Image.fromarray
+    original=Image.fromarray
     def capture(array):
         captured.append(array.copy())
         return original(array)
-    monkeypatch.setattr(engine.Image,'fromarray',capture)
-    engine.export_jpeg(source,name,tmp_path/'edited.jpg',grain='Fuerte',
-                       exposure_ev=.4,temperature=-17,intensity=.6)
+    monkeypatch.setattr(Image,'fromarray',capture)
+    export_jpeg(source,name,tmp_path/'edited.jpg',grain='Fuerte',
+                exposure_ev=.4,temperature=-17,intensity=.6)
     np.testing.assert_array_equal(captured[0],expected)
 
 
@@ -73,18 +83,19 @@ def test_raw_archive_preserves_bytes_and_records_edit(tmp_path):
         assert info['original_sha256']==hashlib.sha256(content).hexdigest()
         assert info['raw_modified'] is False
         recipe=json.loads(archive.read('edit.recipe.json'))
-        user_library.validate_recipe(recipe,engine.LOOKS)
+        validate_recipe(recipe,engine.LOOKS)
         assert recipe['exposure_ev']==.7 and recipe['strength']==.4
         assert str(tmp_path).encode() not in archive.read('export-info.json')
-    with pytest.raises(ValueError): export_raw_bundle(source,name,tmp_path/'wrong.arw')
+    with pytest.raises(ValueError):
+        export_raw_bundle(source,name,tmp_path/'wrong.arw')
 
 
 def test_raw_bundle_includes_portable_custom_lut(tmp_path,monkeypatch):
     path=tmp_path/'identity.cube'
     rows=['LUT_3D_SIZE 2']+[f'{r} {g} {b}' for b in (0,1) for g in (0,1) for r in (0,1)]
     path.write_text('\n'.join(rows))
-    registry=engine.LOOKS.copy()
-    key=user_library.import_profile(path,registry)
+    registry=dict(engine.LOOKS)
+    key=library.import_profile(path,registry)
     engine.LOOKS[key]=registry[key]
     try:
         source=tmp_path/'source.arw'
@@ -99,8 +110,9 @@ def test_raw_bundle_includes_portable_custom_lut(tmp_path,monkeypatch):
                     (restored/Path(name).name).write_bytes(archive.read(name))
         monkeypatch.setenv('FILM_POC_USER_DIR',str(restored))
         loaded={}
-        assert user_library.load_library(loaded)==[]
+        assert library.load_library(loaded)==[]
         assert key in loaded
         sample=np.array([[[.1,.3,.7]]],dtype=np.float32)
-        np.testing.assert_allclose(user_library.apply(sample,loaded[key]),sample,atol=1e-7)
-    finally: engine.LOOKS.pop(key)
+        np.testing.assert_allclose(user_lut.apply(sample,loaded[key]),sample,atol=1e-7)
+    finally:
+        engine.LOOKS.pop(key)
