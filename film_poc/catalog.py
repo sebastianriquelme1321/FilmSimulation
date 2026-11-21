@@ -63,10 +63,14 @@ def reference_linear():
     """Illustrative code-generated chart when no local reference is installed."""
     from .user_library import library_dir
     local=library_dir()/'reference.jpg'
+    image=None
     if local.exists():
-        image=Image.open(local).convert('RGB')
-        image.thumbnail((240,160))
-    else:
+        try:
+            image=Image.open(local).convert('RGB')
+            image.thumbnail((240,160))
+        except (OSError,ValueError):
+            image=None
+    if image is None:
         image=Image.new('RGB',(240,160),'#b5afa4')
         draw=ImageDraw.Draw(image)
         for y in range(160):

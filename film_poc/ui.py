@@ -1,3 +1,5 @@
+import logging
+import struct
 import sys
 from pathlib import Path
 
@@ -43,6 +45,7 @@ class Job(QThread):
         try:
             self.done.emit(self.operation())
         except Exception as exc:
+            logging.exception('Background job failed')
             self.failed.emit(str(exc))
 
 
@@ -376,6 +379,7 @@ class Window(QMainWindow):
         if self.closing_preview: self.close()
 
     def import_custom(self):
+        if self.busy or self.gallery_job is not None: return
         path,_=QFileDialog.getOpenFileName(self,'Añadir perfil sRGB','','LUT o receta (*.cube *.png *.json)')
         if not path: return
         try:
@@ -391,10 +395,11 @@ class Window(QMainWindow):
             self.search.clear()
             self.refresh_gallery()
             self.status.setText('Perfil guardado en tu biblioteca local · entrada sRGB')
-        except (OSError,ValueError,KeyError) as exc:
+        except (OSError,ValueError,KeyError,struct.error,ZeroDivisionError) as exc:
             self.error(str(exc))
 
     def save_recipe(self):
+        if self.busy: return
         base=self.active_look
         if not base:
             return
@@ -482,6 +487,7 @@ class Window(QMainWindow):
         self.render()
 
     def set_busy(self, busy):
+        was_busy = self.busy
         self.busy = busy
         self.open_button.setEnabled(not busy)
         self.look.setEnabled(not busy)
@@ -495,6 +501,7 @@ class Window(QMainWindow):
         for control in (self.exposure,self.exposure_slider,self.temperature,self.intensity,self.reset_button,self.export_format):
             control.setEnabled(not busy)
         self.save_button.setEnabled(not busy and self.linear is not None and bool(self.active_look))
+        if was_busy and not busy: self.render()
 
     def adjustment_values(self):
         return {'exposure_ev':self.exposure.value(), 'temperature':self.temperature.value(),
@@ -530,6 +537,7 @@ class Window(QMainWindow):
         QMessageBox.warning(self, 'Film POC', message)
 
     def open_raw(self):
+        if self.busy: return
         path, _ = QFileDialog.getOpenFileName(self, 'Importar Sony RAW', '', 'Sony RAW (*.arw *.ARW)')
         if path:
             self.run_job(lambda: load_photo(Path(path)), self.loaded, 'Revelando RAW…')
@@ -548,6 +556,7 @@ class Window(QMainWindow):
 
     def render(self, *_):
         self.render_timer.stop()
+        if self.busy: return
         self.preview_revision += 1
         if self.preview is None:
             self.preview_pending = None
