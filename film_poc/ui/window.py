@@ -41,7 +41,7 @@ from .gallery import Gallery
 from .images import pixmap
 from .jobs import make_job
 from .theme import DEFAULT_THEME, THEMES, stylesheet
-from .viewer import CompareView
+from .viewer import SURROUNDS, CompareView
 
 ALL_ORIGINS = 'Todos los orígenes'
 HINT = 'Un poco de nostalgia, en cada foto.'
@@ -111,7 +111,7 @@ class Window(QMainWindow):
         header = QHBoxLayout()
         identity = QVBoxLayout()
         identity.setSpacing(2)
-        eyebrow = QLabel('THE EVERYDAY FILM STUDIO')
+        eyebrow = QLabel('The everyday film studio')
         eyebrow.setObjectName('eyebrow')
         identity.addWidget(eyebrow)
         self.brand = QLabel('FilmSimulation')
@@ -222,6 +222,14 @@ class Window(QMainWindow):
             button.clicked.connect(lambda _=False, m=mode: self.set_view_mode(m))
             self.mode_buttons[mode] = button
             bar.addWidget(button)
+        bar.addSpacing(10)
+        bar.addWidget(QLabel('Fondo'))
+        self.surround = QComboBox()
+        self.surround.addItems(list(SURROUNDS))
+        self.surround.setAccessibleName('Fondo del visor')
+        self.surround.setToolTip('Color neutro alrededor de la foto')
+        self.surround.currentTextChanged.connect(self.viewer.set_surround)
+        bar.addWidget(self.surround)
         bar.addStretch()
         self.zoom_label = QLabel('100 %')
         self.zoom_label.setObjectName('muted')
@@ -393,7 +401,7 @@ class Window(QMainWindow):
         self.active_look = name
         info = metadata(name)
         self.details.setText(info['label'] + '\n' + info['detail'])
-        self.viewer.set_after_label('CON PELÍCULA · ' + info['label'].upper())
+        self.viewer.set_after_label('Con película · ' + info['label'])
         if LOOKS[name].backend == 'recipe':
             _, values = edit_settings(name)
             self.adjustments.set_values(
@@ -595,8 +603,8 @@ class Window(QMainWindow):
             return
         self.backdrop.set_reference(images[0])
         self.pixmaps = [pixmap(rgb) if rgb is not None else None for rgb in images]
-        self.viewer.set_after_label('CON PELÍCULA · ' + metadata(self.active_look)['label'].upper()
-                                 if self.active_look else 'CON PELÍCULA')
+        self.viewer.set_after_label('Con película · ' + metadata(self.active_look)['label']
+                                 if self.active_look else 'Con película')
         self.show_images()
 
     def preview_failed(self, revision, message):

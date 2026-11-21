@@ -1,5 +1,6 @@
 """Exposure, temperature, intensity and colour controls with one `changed` signal."""
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QHBoxLayout,
@@ -82,6 +83,11 @@ class AdjustmentsPanel(QWidget):
             'Restablece todos los ajustes; mantiene la película y el grano.')
         controls.addWidget(self.reset_button)
 
+        for figures in (self.exposure, self.temperature_label, self.intensity_label,
+                        self.contrast_label, self.saturation_label, self.tint_label):
+            font = figures.font()
+            font.setFeature(QFont.Tag('tnum'), 1)  # tabular figures: values do not jitter
+            figures.setFont(font)
         for control in (self.exposure, self.temperature, self.intensity, self.contrast,
                         self.saturation, self.tint):
             control.valueChanged.connect(self._changed)

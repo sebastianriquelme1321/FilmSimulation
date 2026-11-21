@@ -4,6 +4,7 @@ from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QWidget
 
 MODES = ('split', 'before', 'after')
+SURROUNDS = {'Gris': '#303030', 'Negro': '#0A0A0A', 'Blanco': '#E6E6E6'}  # neutral viewer backdrops
 MIN_ZOOM, MAX_ZOOM = .1, 16.
 GRAB = 10  # px either side of the divider that still grabs it
 
@@ -23,8 +24,9 @@ class CompareView(QWidget):
         self.before = None
         self.after = None
         self.placeholder = ''
-        self.before_label = 'ANTES'
-        self.after_label = 'DESPUÉS'
+        self.before_label = 'Antes'
+        self.after_label = 'Después'
+        self.surround = SURROUNDS['Gris']
         self.mode = 'split'
         self.split = .5          # divider position as a fraction of the widget width
         self.fit = True
@@ -49,6 +51,12 @@ class CompareView(QWidget):
     def set_after_label(self, text):
         self.after_label = text
         self.update()
+
+    def set_surround(self, name):
+        """Neutral backdrop behind the photo: 'Gris', 'Negro' or 'Blanco'."""
+        if name in SURROUNDS:
+            self.surround = SURROUNDS[name]
+            self.update()
 
     def set_mode(self, mode):
         """'split' (divider), 'before' or 'after'."""
@@ -139,7 +147,7 @@ class CompareView(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         outline = QPainterPath()
         outline.addRoundedRect(QRectF(self.rect()).adjusted(.5, .5, -.5, -.5), 12, 12)
-        painter.fillPath(outline, QColor('#303030'))
+        painter.fillPath(outline, QColor(self.surround))
         painter.setClipPath(outline)
         if self.after is None and self.before is None:
             self._paint_placeholder(painter)
@@ -147,12 +155,12 @@ class CompareView(QWidget):
             self._paint_photo(painter)
         painter.setClipping(False)
         painter.setBrush(Qt.BrushStyle.NoBrush)  # the last pill left a translucent brush
-        painter.setPen(QPen(QColor('#393939'), 1))
+        painter.setPen(QPen(QColor(self.surround).lighter(115), 1))
         painter.drawPath(outline)
         painter.end()
 
     def _paint_placeholder(self, painter):
-        painter.setPen(QColor('#C0C0C0'))
+        painter.setPen(QColor('#444444' if QColor(self.surround).lightness() > 128 else '#C0C0C0'))
         painter.drawText(self.rect().adjusted(24, 24, -24, -24),
                          Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap,
                          self.placeholder)
@@ -191,9 +199,8 @@ class CompareView(QWidget):
 
     def _pill(self, painter, text, x, y, left):
         font = QFont(painter.font())
-        font.setPixelSize(11)
+        font.setPixelSize(12)
         font.setBold(True)
-        font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1)
         painter.setFont(font)
         width = min(painter.fontMetrics().horizontalAdvance(text) + 20, self.width()//2 - 24)
         box = QRectF(x if left else x-width, y, width, 24)

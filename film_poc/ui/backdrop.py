@@ -5,6 +5,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPixmap, QRadialGradient
 from PySide6.QtWidgets import QWidget
 
+from .theme import palette
+
 
 class StudioBackdrop(QWidget):
     def __init__(self,theme):
@@ -26,7 +28,7 @@ class StudioBackdrop(QWidget):
 
     def paintEvent(self,event):
         painter=QPainter(self)
-        painter.fillRect(self.rect(),QColor('#141210' if self.theme=='darkroom' else '#0D0E11'))
+        painter.fillRect(self.rect(),QColor(palette(self.theme)['window']))
         if self.theme=='glass':
             if self.ambient is not None:
                 image=self.ambient.scaled(self.size(),Qt.AspectRatioMode.KeepAspectRatioByExpanding,
