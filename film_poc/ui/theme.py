@@ -28,21 +28,24 @@ QWidget { font-size: 13px; color: $ink; }
 QWidget#root { background: transparent; }
 QLabel { color: $ink; background: transparent; border: none; }
 QLabel#brand { font-size: 25px; font-weight: 600; letter-spacing: -1px; }
-QLabel#eyebrow { font-size: 10px; color: $muted; letter-spacing: 2px; }
+QLabel#eyebrow { font-size: 11px; color: $muted; letter-spacing: 2px; }
 QLabel#sectionTitle { font-family: '$title_font'; font-size: 20px; font-weight: 600; }
 QLabel#muted { color: $muted; font-size: 12px; }
-QLabel#count { color: $muted; font-size: 11px; padding: 4px 6px; }
+QLabel#count { color: $muted; font-size: 12px; padding: 4px 6px; }
 QFrame#library { background: $panel; border: 1px solid $edge; border-radius: ${radius}px; }
 QFrame#workspace { background: transparent; border: none; }
 QFrame#photoFrame { background: #303030; border: 1px solid #393939; border-radius: 12px; }
 QLabel#photoLabel { color: #E4E4E4; font-size: 10px; font-weight: 600; letter-spacing: 1px; }
 QLabel#photoView { background: #303030; color: #C0C0C0; border: none; }
-QLabel#details { color: $muted; font-size: 11px; padding-top: 9px; border-top: 1px solid $edge; }
+QLabel#details { color: $muted; font-size: 12px; padding-top: 9px; border-top: 1px solid $edge; }
 QPushButton { background: $field; color: $ink; border: 1px solid $edge;
  border-radius: ${control}px; padding: 9px 14px; font-weight: 500; }
 QPushButton:hover { background: $hover; border-color: $muted; }
 QPushButton:pressed { background: $selected; }
 QPushButton:focus { border: 1px solid $accent; }
+QPushButton#tool { padding: 5px 11px; font-size: 12px; }
+QPushButton#tool:checked { background: $selected; border-color: $accent; }
+QLabel#value { color: $muted; }
 QPushButton#primary { background: $primary; color: #141210; border: 1px solid $primary; font-weight: 600; }
 QPushButton#primary:hover { background: $primary_hover; }
 QPushButton#primary:disabled, QPushButton:disabled { color: #766F65; background: #25221E; border-color: #37322B; }

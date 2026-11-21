@@ -7,7 +7,6 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
-    QBoxLayout,
     QComboBox,
     QFileDialog,
     QFrame,
@@ -24,6 +23,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+from ..core import raw
 from ..core.grain import GRAIN
 from ..core.preview import PreviewPipeline
 from ..core.render import LOOKS, apply_look, edit_settings, look_slug, uint8
@@ -39,6 +39,7 @@ from .gallery import Gallery
 from .images import pixmap
 from .jobs import make_job
 from .theme import DEFAULT_THEME, THEMES, stylesheet
+from .viewer import CompareView
 
 ALL_ORIGINS = 'Todos los orígenes'
 HINT = 'Un poco de nostalgia, en cada foto.'
@@ -53,7 +54,8 @@ class Window(QMainWindow):
         startup_warnings = library.startup()
         reference_thumbnails.cache_clear()
         self.resize(1440, 900)
-        self.setMinimumSize(940, 680)
+        self.setMinimumSize(1120, 680)
+        self.setAcceptDrops(True)
         self.linear = None
         self.preview = None
         self.preview_step = 1
@@ -85,8 +87,10 @@ class Window(QMainWindow):
         splitter.setHandleWidth(18)
         splitter.addWidget(self._build_sidebar())
         splitter.addWidget(self._build_workspace())
+        splitter.addWidget(self._build_inspector())
         splitter.setStretchFactor(1, 1)
-        splitter.setSizes([370, 1000])
+        splitter.setCollapsible(1, False)
+        splitter.setSizes([370, 700, 290])
         layout.addWidget(splitter, 1)
         self._build_footer(layout)
         self.setCentralWidget(root)
@@ -178,9 +182,8 @@ class Window(QMainWindow):
         compare = QFrame()
         compare.setObjectName('workspace')
         workspace = QVBoxLayout(compare)
-        workspace.setContentsMargins(20, 20, 20, 16)
-        workspace.setSpacing(14)
-        info = QHBoxLayout()
+        workspace.setContentsMargins(4, 0, 4, 0)
+        workspace.setSpacing(10)
         photo_info = QVBoxLayout()
         photo_info.setSpacing(3)
         self.photo_title = QLabel('Tu próxima foto favorita')
@@ -191,51 +194,78 @@ class Window(QMainWindow):
         self.photo_meta.setObjectName('muted')
         photo_info.addWidget(self.photo_title)
         photo_info.addWidget(self.photo_meta)
-        info.addLayout(photo_info, 1)
-        grain_label = QLabel('GRANO')
-        grain_label.setObjectName('eyebrow')
-        info.addWidget(grain_label)
+        workspace.addLayout(photo_info)
+        self.viewer = CompareView()
+        self.viewer.set_placeholder(f'Tu imagen empieza aquí\n\nImporta o arrastra un archivo '
+                                    f'{supported_labels()}')
+        workspace.addWidget(self.viewer, 1)
+        workspace.addLayout(self._build_view_toolbar())
+        return compare
+
+    def _build_view_toolbar(self):
+        bar = QHBoxLayout()
+        bar.setSpacing(6)
+        self.mode_buttons = {}
+        for mode, text, tip in (('split', 'Dividido', 'Antes y después con divisor arrastrable'),
+                                ('before', 'Antes', 'Solo la base ajustada'),
+                                ('after', 'Después', 'Solo con película')):
+            button = QPushButton(text)
+            button.setObjectName('tool')
+            button.setCheckable(True)
+            button.setChecked(mode == 'split')
+            button.setToolTip(tip)
+            button.clicked.connect(lambda _=False, m=mode: self.set_view_mode(m))
+            self.mode_buttons[mode] = button
+            bar.addWidget(button)
+        bar.addStretch()
+        self.zoom_label = QLabel('100 %')
+        self.zoom_label.setObjectName('muted')
+        self.zoom_label.setMinimumWidth(56)
+        self.zoom_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        for text, tip, action in (('−', 'Alejar (−)', lambda: self.viewer.zoom_by(.8)),
+                                  ('Ajustar', 'Ajustar a la ventana (0)', self.viewer.fit_view),
+                                  ('100 %', 'Tamaño real (1)', self.viewer.actual_size),
+                                  ('+', 'Acercar (+)', lambda: self.viewer.zoom_by(1.25))):
+            button = QPushButton(text)
+            button.setObjectName('tool')
+            button.setToolTip(tip)
+            button.clicked.connect(lambda _=False, a=action: a())
+            bar.addWidget(button)
+        bar.addWidget(self.zoom_label)
+        self.viewer.zoom_changed.connect(self._zoom_changed)
+        return bar
+
+    def set_view_mode(self, mode):
+        """Switch the viewer between divider, before-only and after-only."""
+        self.viewer.set_mode(mode)
+        for key, button in self.mode_buttons.items():
+            button.setChecked(key == mode)
+
+    def _zoom_changed(self, _):
+        self.zoom_label.setText(f'{self.viewer.zoom_percent()} %')
+
+    def _build_inspector(self):
+        inspector = QFrame()
+        inspector.setObjectName('library')
+        column = QVBoxLayout(inspector)
+        column.setContentsMargins(18, 20, 18, 18)
+        column.setSpacing(10)
+        heading = QLabel('Ajustes')
+        heading.setObjectName('sectionTitle')
+        column.addWidget(heading)
+        self.adjustments = AdjustmentsPanel()
+        column.addWidget(self.adjustments)
+        column.addSpacing(8)
+        column.addWidget(QLabel('Grano'))
         self.grain = QComboBox()
         self.grain.addItems(GRAIN)
         self.grain.setAccessibleName('Intensidad del grano')
         self.grain.setToolTip('Textura monocromática aplicada al JPEG final')
-        self.grain.setMinimumWidth(122)
-        info.addWidget(self.grain)
-        workspace.addLayout(info)
-        self.adjustments = AdjustmentsPanel()
-        workspace.addWidget(self.adjustments)
-        self.panes = QBoxLayout(QBoxLayout.Direction.LeftToRight)
-        self.panes.setSpacing(12)
-        self.views = []
-        self.after_title = None
-        for index, title in enumerate(('BASE AJUSTADA', 'CON PELÍCULA')):
-            frame = QFrame()
-            frame.setObjectName('photoFrame')
-            column = QVBoxLayout(frame)
-            column.setContentsMargins(10, 12, 10, 10)
-            label = QLabel(title)
-            label.setObjectName('photoLabel')
-            label.setWordWrap(True)
-            label.setToolTip('Revelado sRGB con exposición y temperatura; sin simulación ni grano'
-                             if index == 0 else 'Simulación y grano seleccionados')
-            column.addWidget(label)
-            if index:
-                self.after_title = label
-            view = QLabel(f'Tu imagen empieza aquí\n\nImporta un archivo {supported_labels()}'
-                          if index == 0
-                          else 'Encuentra tu look\n\nElige una película de la colección')
-            view.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            view.setMinimumSize(160, 160)
-            view.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
-            view.setObjectName('photoView')
-            column.addWidget(view, 1)
-            self.views.append(view)
-            self.panes.addWidget(frame, 1)
-        workspace.addLayout(self.panes, 1)
-        caption = QLabel('ANTES / DESPUÉS     ·     Misma foto, otra sensación.')
-        caption.setObjectName('muted')
-        workspace.addWidget(caption)
-        return compare
+        column.addWidget(self.grain)
+        column.addStretch()
+        inspector.setMinimumWidth(250)
+        inspector.setMaximumWidth(330)
+        return inspector
 
     def _build_footer(self, layout):
         footer = QHBoxLayout()
@@ -243,11 +273,7 @@ class Window(QMainWindow):
         self.status.setObjectName('muted')
         self.status.setTextFormat(Qt.TextFormat.PlainText)
         footer.addWidget(self.status, 1)
-        signature = QLabel('RAW → FILM → JPEG')
-        signature.setObjectName('eyebrow')
-        footer.addWidget(signature)
-        footer.addSpacing(16)
-        footer.addWidget(QLabel('Aspecto'))
+        footer.addWidget(QLabel('Tema'))
         self.theme_selector = QComboBox()
         for key, label in THEMES.items():
             self.theme_selector.addItem(label, key)
@@ -348,7 +374,7 @@ class Window(QMainWindow):
         self.active_look = name
         info = metadata(name)
         self.details.setText(info['label'] + '\n' + info['detail'])
-        self.after_title.setText('CON PELÍCULA · ' + info['label'].upper())
+        self.viewer.set_after_label('CON PELÍCULA · ' + info['label'].upper())
         if LOOKS[name].backend == 'recipe':
             _, values = edit_settings(name)
             self.adjustments.set_values(values['exposure_ev'], values['temperature'],
@@ -446,23 +472,55 @@ class Window(QMainWindow):
         """Ask for a RAW file and develop it."""
         if self.busy:
             return
-        path, _ = QFileDialog.getOpenFileName(self, 'Importar Sony RAW', '', open_filter())
+        path, _ = QFileDialog.getOpenFileName(self, 'Importar RAW', '', open_filter())
         if path:
-            source = Path(path)
-            self.run_job(lambda: decode(source), lambda linear: self.loaded(source, linear),
-                         'Revelando RAW…')
+            self.open_path(Path(path))
+
+    def open_path(self, source):
+        """Develop a RAW file in the background and show it."""
+        if self.busy:
+            return
+        self.run_job(lambda: decode(source), lambda linear: self.loaded(source, linear),
+                     'Revelando RAW…')
+
+    def dragEnterEvent(self, event):
+        """Accept a dragged RAW file."""
+        if self._dropped_raw(event) is not None:
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        """Open a dropped RAW file."""
+        path = self._dropped_raw(event)
+        if path is not None:
+            self.open_path(path)
+
+    def _dropped_raw(self, event):
+        supported_labels()  # makes sure the decoders are registered
+        for url in event.mimeData().urls():
+            path = Path(url.toLocalFile())
+            if path.suffix.lower() in raw.supported_extensions():
+                return path
+        return None
 
     def loaded(self, source, linear):
         """Adopt a developed photo and render it."""
         self.source, self.linear = source, linear
         self.photo_title.setText(source.name)
         self.photo_title.setToolTip(source.name)
-        self.photo_meta.setText(f'{linear.shape[1]} × {linear.shape[0]} · Sony RAW')
+        self.photo_meta.setText(f'{linear.shape[1]} × {linear.shape[0]} · '
+                                f'{self._format_label(source)}')
         self.preview_step = max(1, (max(linear.shape[:2]) + 1279) // 1280)
         self.preview = linear[::self.preview_step, ::self.preview_step].copy()
         self.refresh_gallery()
         self.render()
         self.status.setText(f'{source.name} · {linear.shape[1]} × {linear.shape[0]}')
+
+    @staticmethod
+    def _format_label(source):
+        try:
+            return raw.decoder_for(source).label
+        except ValueError:
+            return 'RAW'
 
     # ---- preview ------------------------------------------------------------------------
 
@@ -488,7 +546,7 @@ class Window(QMainWindow):
         revision, source, name, values, grain, step = self.preview_pending
         self.preview_pending = None
         if name:
-            self.after_title.setText('ACTUALIZANDO · ' + metadata(name)['label'].upper())
+            self.viewer.set_after_label('ACTUALIZANDO · ' + metadata(name)['label'].upper())
         self.preview_job = make_job(
             lambda: self.preview_pipeline.render(source, name, **values, grain=grain, step=step),
             self, done=lambda images: self.show_preview(revision, images),
@@ -502,9 +560,9 @@ class Window(QMainWindow):
             return
         self.backdrop.set_reference(images[0])
         self.pixmaps = [pixmap(rgb) if rgb is not None else None for rgb in images]
-        self.after_title.setText('CON PELÍCULA · ' + metadata(self.active_look)['label'].upper()
+        self.viewer.set_after_label('CON PELÍCULA · ' + metadata(self.active_look)['label'].upper()
                                  if self.active_look else 'CON PELÍCULA')
-        self.fit_images()
+        self.show_images()
 
     def preview_failed(self, revision, message):
         """Report a preview failure unless it is stale."""
@@ -522,25 +580,13 @@ class Window(QMainWindow):
         else:
             self.start_preview()
 
-    def fit_images(self):
-        """Scale the preview pixmaps to their panes."""
-        for view, image in zip(self.views, self.pixmaps, strict=False):
-            if image is None:
-                view.clear()
-                view.setText('Elige una película de la colección\n'
-                             'Haz clic o pulsa Enter para aplicarla.')
-                continue
-            view.setPixmap(image.scaled(view.size(), Qt.AspectRatioMode.KeepAspectRatio,
-                                        Qt.TransformationMode.SmoothTransformation))
-
-    def resizeEvent(self, event):
-        """Stack the panes vertically on narrow windows and refit the images."""
-        super().resizeEvent(event)
-        if hasattr(self, 'panes'):
-            direction = (QBoxLayout.Direction.TopToBottom if self.width() < 1180
-                         else QBoxLayout.Direction.LeftToRight)
-            self.panes.setDirection(direction)
-        self.fit_images()
+    def show_images(self):
+        """Hand the rendered previews to the viewer (or its empty state)."""
+        before, after = (self.pixmaps + [None, None])[:2]
+        self.viewer.set_placeholder('Elige una película de la colección\n'
+                                    'Haz clic o pulsa Enter para aplicarla.'
+                                    if before is not None else self.viewer.placeholder)
+        self.viewer.set_images(before, after)
 
     # ---- export -------------------------------------------------------------------------
 

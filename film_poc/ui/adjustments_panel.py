@@ -2,26 +2,26 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDoubleSpinBox,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
     QSlider,
+    QVBoxLayout,
     QWidget,
 )
 
 
 class AdjustmentsPanel(QWidget):
-    """The edit controls; values() returns engine keyword arguments."""
+    """The edit controls, one per row (name and value above, slider below)."""
 
     changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        controls = QGridLayout(self)
+        controls = QVBoxLayout(self)
         controls.setContentsMargins(0, 0, 0, 0)
-        controls.setSpacing(10)
-        controls.addWidget(QLabel('Exposición'), 0, 0)
+        controls.setSpacing(6)
+
         self.exposure = QDoubleSpinBox()
         self.exposure.setRange(-3, 3)
         self.exposure.setDecimals(2)
@@ -29,47 +29,60 @@ class AdjustmentsPanel(QWidget):
         self.exposure.setSuffix(' EV')
         self.exposure.setAccessibleName('Exposición antes de la simulación')
         self.exposure.setKeyboardTracking(False)
-        self.exposure.setFixedWidth(108)
+        self.exposure.setFixedWidth(104)
         self.exposure.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.exposure.setToolTip('Escribe un valor exacto entre −3 y +3 EV y pulsa Enter.')
         self.exposure_slider = QSlider(Qt.Orientation.Horizontal)
         self.exposure_slider.setRange(-300, 300)
         self.exposure_slider.setSingleStep(10)
         self.exposure_slider.setPageStep(50)
-        self.exposure_slider.setMinimumWidth(80)
         self.exposure_slider.setAccessibleName('Deslizador de exposición en EV')
         self.exposure_slider.setToolTip(
             'Arrastra para aclarar u oscurecer. Flechas: 0,1 EV; RePág/AvPág: 0,5 EV.')
-        exposure_row = QHBoxLayout()
-        exposure_row.setSpacing(10)
-        exposure_row.addWidget(self.exposure_slider, 1)
-        exposure_row.addWidget(self.exposure)
-        controls.addLayout(exposure_row, 0, 1, 1, 2)
+        controls.addLayout(self._row('Exposición', self.exposure))
+        controls.addWidget(self.exposure_slider)
+        controls.addSpacing(8)
+
         self.temperature = QSlider(Qt.Orientation.Horizontal)
         self.temperature.setRange(-100, 100)
         self.temperature.setAccessibleName('Temperatura relativa: frío a cálido')
         self.temperature.setToolTip('Corrección RGB relativa al balance de cámara; '
                                     'no es una temperatura calibrada en Kelvin.')
-        self.temperature_label = QLabel('Temperatura · 0')
-        controls.addWidget(self.temperature_label, 1, 0)
-        controls.addWidget(self.temperature, 1, 1)
+        self.temperature_label = QLabel('0')
+        self.temperature_label.setObjectName('value')
+        controls.addLayout(self._row('Temperatura', self.temperature_label))
+        controls.addWidget(self.temperature)
+        controls.addSpacing(8)
+
         self.intensity = QSlider(Qt.Orientation.Horizontal)
         self.intensity.setRange(0, 100)
         self.intensity.setValue(100)
         self.intensity.setAccessibleName('Intensidad de la simulación en porcentaje')
-        self.intensity_label = QLabel('Look · 100 %')
-        controls.addWidget(self.intensity_label, 1, 2)
-        controls.addWidget(self.intensity, 1, 3)
-        self.reset_button = QPushButton('Restablecer')
+        self.intensity_label = QLabel('100 %')
+        self.intensity_label.setObjectName('value')
+        controls.addLayout(self._row('Intensidad del look', self.intensity_label))
+        controls.addWidget(self.intensity)
+        controls.addSpacing(8)
+
+        self.reset_button = QPushButton('Restablecer ajustes')
         self.reset_button.setToolTip(
             'Restablece exposición, temperatura e intensidad; mantiene la película y el grano.')
-        controls.addWidget(self.reset_button, 0, 3)
-        controls.setColumnStretch(1, 1)
-        controls.setColumnStretch(3, 1)
+        controls.addWidget(self.reset_button)
+
         for control in (self.exposure, self.temperature, self.intensity):
             control.valueChanged.connect(self._changed)
         self.exposure_slider.valueChanged.connect(lambda value: self.exposure.setValue(value / 100))
         self.reset_button.clicked.connect(self.reset)
+        self._sync()
+
+    @staticmethod
+    def _row(name, value_widget):
+        row = QHBoxLayout()
+        row.setSpacing(8)
+        row.addWidget(QLabel(name))
+        row.addStretch()
+        row.addWidget(value_widget)
+        return row
 
     def values(self):
         """Current settings as engine keyword arguments."""
@@ -102,8 +115,8 @@ class AdjustmentsPanel(QWidget):
         self.exposure_slider.blockSignals(True)
         self.exposure_slider.setValue(round(self.exposure.value() * 100))
         self.exposure_slider.blockSignals(False)
-        self.temperature_label.setText(f'Temperatura · {self.temperature.value():+d}')
-        self.intensity_label.setText(f'Look · {self.intensity.value()} %')
+        self.temperature_label.setText(f'{self.temperature.value():+d}')
+        self.intensity_label.setText(f'{self.intensity.value()} %')
 
     def _changed(self, *_):
         self._sync()
