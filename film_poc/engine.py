@@ -45,13 +45,6 @@ def look_slug(name):
     profile = LOOKS[name]
     return re.sub(r'[^a-z0-9]+', '_', profile['display_name'].lower()).strip('_')
 
-# Monotone, scene-independent base rendering: retain black, lift midtones,
-# compress toward white. Applied once before the display-referred profiles.
-_BASE_CURVE = PchipInterpolator(
-    [0, .001, .003, .01, .03, .06, .12, .25, .5, 1],
-    [0, .001, .004, .02, .07, .135, .25, .44, .7, 1])
-
-
 def render_base(linear):
     return display_rgb(linear)
 
@@ -92,20 +85,6 @@ def match_camera_tone(linear, reference):
         amount = np.minimum(1, (1-target)/np.maximum(chroma.max(axis=-1), 1e-10))
         result[row:row+256] = np.clip(target[..., None]+chroma*amount[..., None], 0, 1)
     return result
-
-
-def legacy_base_v2(linear):
-    """Retained solely for comparing the previous experimental rendering."""
-    x = np.clip(np.asarray(linear, dtype=np.float32), 0, 1)
-    y = x @ np.array([.2126, .7152, .0722], dtype=np.float32)
-    target = _BASE_CURVE(y).astype(np.float32)
-    rgb = x * (target / np.maximum(y, 1e-10))[..., None]
-    # Compress chroma only when needed to keep RGB inside the output gamut.
-    chroma = rgb - target[..., None]
-    maximum = np.max(chroma, axis=-1)
-    amount = np.minimum(1, (1-target) / np.maximum(maximum, 1e-10))
-    rgb = target[..., None] + chroma * amount[..., None]
-    return display_rgb(np.clip(rgb, 0, 1))
 
 
 def decode(path: Path) -> np.ndarray:

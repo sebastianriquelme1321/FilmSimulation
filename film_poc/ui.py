@@ -81,6 +81,19 @@ class Window(QMainWindow):
         layout = QVBoxLayout(root)
         layout.setContentsMargins(24, 22, 24, 16)
         layout.setSpacing(18)
+        self._build_header(layout)
+        splitter = QSplitter()
+        splitter.setHandleWidth(18)
+        splitter.addWidget(self._build_sidebar())
+        splitter.addWidget(self._build_workspace())
+        splitter.setStretchFactor(1,1)
+        splitter.setSizes([370, 1000])
+        layout.addWidget(splitter,1)
+        self._build_footer(layout)
+        self.setCentralWidget(root)
+        self._connect_signals()
+
+    def _build_header(self, layout):
         header = QHBoxLayout()
         identity = QVBoxLayout()
         identity.setSpacing(2)
@@ -107,8 +120,7 @@ class Window(QMainWindow):
         header.addWidget(self.save_button)
         layout.addLayout(header)
 
-        splitter = QSplitter()
-        splitter.setHandleWidth(18)
+    def _build_sidebar(self):
         sidebar = QFrame()
         sidebar.setObjectName('library')
         side = QVBoxLayout(sidebar)
@@ -170,8 +182,9 @@ class Window(QMainWindow):
         side.addLayout(library_actions)
         sidebar.setMinimumWidth(364)
         sidebar.setMaximumWidth(410)
-        splitter.addWidget(sidebar)
+        return sidebar
 
+    def _build_workspace(self):
         compare = QFrame()
         compare.setObjectName('workspace')
         workspace = QVBoxLayout(compare)
@@ -272,10 +285,9 @@ class Window(QMainWindow):
         caption = QLabel('ANTES / DESPUÉS     ·     Misma foto, otra sensación.')
         caption.setObjectName('muted')
         workspace.addWidget(caption)
-        splitter.addWidget(compare)
-        splitter.setStretchFactor(1,1)
-        splitter.setSizes([370, 1000])
-        layout.addWidget(splitter,1)
+        return compare
+
+    def _build_footer(self, layout):
         footer = QHBoxLayout()
         self.status = QLabel('Listo para revelar')
         self.status.setObjectName('muted')
@@ -299,7 +311,8 @@ class Window(QMainWindow):
         self.progress.setTextVisible(False)
         self.progress.hide()
         layout.addWidget(self.progress)
-        self.setCentralWidget(root)
+
+    def _connect_signals(self):
         self.open_button.clicked.connect(self.open_raw)
         self.look.currentTextChanged.connect(self.selected_look)
         self.origin.currentTextChanged.connect(self.refresh_gallery)
@@ -321,6 +334,7 @@ class Window(QMainWindow):
         self.theme_selector.currentIndexChanged.connect(self.change_theme)
         self.apply_theme(self.theme_name)
         QTimer.singleShot(0,self.load_gallery)
+
 
     def apply_theme(self, theme):
         self.theme_name=theme
