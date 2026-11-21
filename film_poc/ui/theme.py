@@ -59,9 +59,8 @@ QDoubleSpinBox { padding: 6px; min-height: 20px; }
 QDoubleSpinBox QLineEdit { border: none; background: transparent; padding: 0; }
 QListWidget { background: transparent; border: none; color: $ink; padding: 0; outline: none; }
 QListWidget::item { background: transparent; padding: 5px; border: 1px solid transparent; border-radius: ${radius}px; }
-QListWidget::item:selected { background: $selected; border: 1px solid $accent; color: $ink; }
+QListWidget::item:selected { background: $selected; border: 2px solid $accent; padding: 4px; color: $ink; }
 QListWidget::item:hover { background: $hover; border-color: $edge; }
-QListWidget:focus::item:selected { border: 2px solid $accent; }
 QScrollBar:vertical { background: transparent; width: 6px; margin: 3px 0; }
 QScrollBar::handle:vertical { background: #746C5E; min-height: 32px; border-radius: 3px; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
@@ -74,7 +73,7 @@ QProgressBar { background: #302A22; border: none; border-radius: 2px; max-height
 QProgressBar::chunk { background: $accent; }
 QSplitter::handle { background: transparent; }
 QToolTip { background: #211E19; color: $ink; border: 1px solid $edge; padding: 7px; }
-QSlider::groove:horizontal { height: 4px; background: #514A40; border-radius: 2px; }
+QSlider::groove:horizontal { height: 4px; background: #7A7062; border-radius: 2px; }
 QSlider::sub-page:horizontal { background: $accent; border-radius: 2px; }
 QSlider::handle:horizontal { background: $ink; border: 1px solid $accent; width: 14px; margin: -6px 0; border-radius: 7px; }
 QSlider::handle:horizontal:focus { border: 2px solid $accent; }

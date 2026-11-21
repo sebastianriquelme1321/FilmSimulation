@@ -59,6 +59,7 @@ class Gallery(QListWidget):
         index = names.index(active) if active in names else -1
         self.look.setCurrentIndex(index)
         self.setCurrentRow(index)
+        self._reveal_current()
         self.look.blockSignals(False)
         self.blockSignals(False)
         return len(names)
@@ -92,4 +93,11 @@ class Gallery(QListWidget):
         self.blockSignals(True)
         self.setCurrentRow(self.look.currentIndex())
         self.blockSignals(False)
+        self._reveal_current()
         self.selected.emit(name)
+
+    def _reveal_current(self):
+        """Scroll so the active card is visible; a selection off-screen reads as none."""
+        item = self.currentItem()
+        if item is not None:
+            self.scrollToItem(item, QAbstractItemView.ScrollHint.EnsureVisible)
