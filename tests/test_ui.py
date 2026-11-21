@@ -37,6 +37,28 @@ def test_window_render_and_background_job(tmp_path,wait_window):
     window.close()
 
 
+def test_gallery_reveals_the_active_look(wait_window):
+    app = QApplication.instance() or QApplication([])
+    window = Window()
+    window.show()
+    app.processEvents()
+    gallery = window.gallery
+    last = gallery.look.itemText(gallery.look.count() - 1)  # far below the first screenful
+    gallery.populate(window.origin.currentText(), '', last)
+    app.processEvents()
+    visible = gallery.visualItemRect(gallery.currentItem()).intersected(gallery.viewport().rect())
+    assert not visible.isEmpty()
+    wait_window(window)
+    window.close()
+
+
+def test_stylesheet_has_no_list_wide_focus_border():
+    from film_poc.ui.theme import THEMES, stylesheet
+    for theme in THEMES:
+        # ':focus::item' rules leak onto the whole QListWidget as an orange frame
+        assert 'QListWidget:focus::item' not in stylesheet(theme)
+
+
 def test_edit_controls_and_raw_export_route(tmp_path,monkeypatch,wait_window):
     import json
     import zipfile
@@ -65,7 +87,8 @@ def test_edit_controls_and_raw_export_route(tmp_path,monkeypatch,wait_window):
         assert recipe['strength']==.4 and recipe['exposure_ev']==.8
         assert recipe['temperature']==25
     window.adjustments.reset()
-    assert window.adjustments.values()=={'exposure_ev':0,'temperature':0,'intensity':1}
+    assert window.adjustments.values()=={'exposure_ev':0,'temperature':0,'intensity':1,
+        'contrast':0,'saturation':0,'tint':0}
     assert window.adjustments.exposure_slider.value()==0
     window.render_timer.stop()
     wait_window(window)

@@ -43,11 +43,11 @@ def test_load_decoders_is_idempotent_and_finds_arw():
 
 def test_decoder_for_is_case_insensitive_and_message_uses_labels(fake_decoder):
     adapters.load_decoders()
-    assert raw.decoder_for(Path('photo.ARW')).label == 'Sony .ARW'
+    assert raw.decoder_for(Path('photo.ARW')).label == 'RAW'
     assert raw.is_supported(Path('x.Arw'))
     with pytest.raises(ValueError) as error:
         raw.decoder_for(Path('photo.xyz'))
-    assert 'Sony .ARW / Fake .FAKERAW' in str(error.value)
+    assert 'RAW / Fake .FAKERAW' in str(error.value)
 
 
 def test_fake_decoder_is_routed_through_develop(fake_decoder):
@@ -57,12 +57,15 @@ def test_fake_decoder_is_routed_through_develop(fake_decoder):
 
 
 def test_open_filter_follows_registered_decoders(fake_decoder):
-    assert develop.open_filter() == 'Sony .ARW / Fake .FAKERAW (*.arw *.ARW *.fakeraw *.FAKERAW)'
-    assert develop.supported_labels() == 'Sony .ARW / Fake .FAKERAW'
+    flt = develop.open_filter()
+    assert flt.startswith('RAW / Fake .FAKERAW (*.arw *.ARW ') and '*.cr3 *.CR3' in flt
+    assert flt.endswith('*.fakeraw *.FAKERAW)')
+    assert develop.supported_labels() == 'RAW / Fake .FAKERAW'
 
 
 def test_open_filter_with_only_arw():
-    assert develop.open_filter() == 'Sony .ARW (*.arw *.ARW)'
+    flt = develop.open_filter()
+    assert flt.startswith('RAW (*.arw *.ARW ') and '*.nef *.NEF' in flt
 
 
 def test_fake_decoder_is_cleaned_up():
@@ -80,7 +83,8 @@ def test_save_recipe_round_trip_and_invalid(tmp_path):
     key = library.import_profile(path)
     try:
         assert engine.edit_settings(key) == (name, {'exposure_ev': .5, 'temperature': 20,
-                                                    'intensity': .5})
+                                                    'intensity': .5, 'contrast': 0,
+                                                    'saturation': 0, 'tint': 0})
     finally:
         engine.LOOKS.pop(key)
     bad = tmp_path/'bad.json'
@@ -200,3 +204,18 @@ def test_bundle_zip_members_with_custom_lut(tmp_path):
                  f'library/{digest}.cube', f'library/{digest}.entry.json'])
     finally:
         engine.LOOKS.pop(key)
+
+
+def test_decoder_scan_runs_once(monkeypatch):
+    monkeypatch.setattr(adapters, '_loaded', False)
+    calls = []
+    real = adapters.pkgutil.iter_modules
+
+    def counting(*args, **kwargs):
+        calls.append(1)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(adapters.pkgutil, 'iter_modules', counting)
+    for _ in range(3):
+        adapters.load_decoders()
+    assert len(calls) == 1 and '.arw' in raw._decoders

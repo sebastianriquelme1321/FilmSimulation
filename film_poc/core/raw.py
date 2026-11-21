@@ -7,11 +7,13 @@ import numpy as np
 
 class RawDecoder(Protocol):
     extensions: tuple[str, ...]  # lowercase, with dot, e.g. ('.arw',)
-    label: str                   # shown in the unsupported-file message, e.g. 'Sony .ARW'
+    label: str                   # shown in the unsupported-file message, e.g. 'RAW'
 
-    def decode(self, path: Path) -> tuple[np.ndarray, np.ndarray]:
+    def decode(self, path: Path) -> tuple[np.ndarray, np.ndarray | None]:
         """Return (linear, reference): oriented HxWx3 float32 linear sRGB in [0, 1] with the
-        camera white balance applied, and the embedded camera JPEG preview as HxWx3 uint8."""
+        camera white balance applied, and the embedded camera JPEG preview as HxWx3 uint8, or
+        None when the file has no usable preview (the tone match is then skipped).
+        Failures must raise ValueError with a user-facing Spanish message."""
         ...
 
 

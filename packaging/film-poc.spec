@@ -52,7 +52,8 @@ if IS_MAC:
         info_plist={
             'CFBundleName': 'FilmSimulation',
             'CFBundleDisplayName': 'FilmSimulation',
-            'CFBundleShortVersionString': '0.6.0',
+            'CFBundleShortVersionString': '0.7.0',
+            'CFBundleVersion': '0.7.0',
             'NSHighResolutionCapable': True,
         },
     )

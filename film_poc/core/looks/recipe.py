@@ -6,7 +6,7 @@ from ..adjustments import validate
 from ..grain import GRAIN
 
 _ALLOWED = {'version', 'name', 'author', 'source', 'license', 'base_look', 'strength', 'grain',
-            'input_space', 'exposure_ev', 'temperature'}
+            'input_space', 'exposure_ev', 'temperature', 'contrast', 'saturation', 'tint'}
 
 
 class RecipeBackend:
@@ -16,7 +16,10 @@ class RecipeBackend:
     def apply(self, linear, look):
         recipe = look.params['recipe']
         return self._render_edit(linear, recipe['base_look'], recipe.get('exposure_ev', 0),
-                                 recipe.get('temperature', 0), recipe.get('strength', 1.0))[1]
+                                 recipe.get('temperature', 0), recipe.get('strength', 1.0),
+                                 contrast=recipe.get('contrast', 0),
+                                 saturation=recipe.get('saturation', 0),
+                                 tint=recipe.get('tint', 0))[1]
 
 
 def validate_recipe(data: dict, registry: dict) -> dict:
@@ -39,5 +42,6 @@ def validate_recipe(data: dict, registry: dict) -> dict:
         raise ValueError('Grano de receta inválido.')
     if not isinstance(data.get('name'), str) or not data['name'].strip():
         raise ValueError('La receta necesita un nombre.')
-    validate(data.get('exposure_ev', 0), data.get('temperature', 0), strength)
+    validate(data.get('exposure_ev', 0), data.get('temperature', 0), strength,
+             data.get('contrast', 0), data.get('saturation', 0), data.get('tint', 0))
     return data

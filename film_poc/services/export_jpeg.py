@@ -13,16 +13,19 @@ from .library import install
 
 def export_jpeg(linear: np.ndarray, name: str, destination: str | Path, grain: str = 'Desactivado',
                 *, exposure_ev: float | None = None, temperature: float | None = None,
-                intensity: float | None = None) -> None:
+                intensity: float | None = None, contrast: float | None = None,
+                saturation: float | None = None, tint: float | None = None) -> None:
     """Render in strips to limit full-resolution temporary allocations; atomic save."""
     install()
     destination = Path(destination)
     if destination.suffix.lower() not in ('.jpg', '.jpeg'):
         raise ValueError('La salida debe ser .jpg o .jpeg.')
-    edit_settings(name, exposure_ev, temperature, intensity)
+    extra = {'contrast': contrast, 'saturation': saturation, 'tint': tint}
+    edit_settings(name, exposure_ev, temperature, intensity, **extra)
     out = np.empty(linear.shape, dtype=np.uint8)
     for row in range(0, len(linear), STRIP_ROWS):
-        _, rgb = render_edit(linear[row:row+STRIP_ROWS], name, exposure_ev, temperature, intensity)
+        _, rgb = render_edit(linear[row:row+STRIP_ROWS], name, exposure_ev, temperature,
+                             intensity, **extra)
         out[row:row+STRIP_ROWS] = uint8(apply_grain(rgb, grain, origin_y=row))
     icc = ImageCms.ImageCmsProfile(ImageCms.createProfile('sRGB')).tobytes()
     with atomic_path(destination, '.jpg') as temporary:

@@ -73,19 +73,55 @@ def cached_array(namespace: str, token: str, build: Callable[[], np.ndarray],
     return result
 
 
-def load_theme_name() -> str | None:
-    """Return the saved theme name string, or None if missing or unreadable."""
+def _appearance() -> dict:
+    """Return the saved appearance preferences, or {} if missing or unreadable."""
     try:
         data = json.loads((library_dir() / 'appearance.json').read_text(encoding='utf-8'))
-        theme = data.get('theme') if isinstance(data, dict) else None
-        return theme if isinstance(theme, str) else None
+        return data if isinstance(data, dict) else {}
     except (OSError, ValueError, TypeError):
-        return None
+        return {}
+
+
+def _save_appearance(key: str, value: str) -> None:
+    """Merge one key into appearance.json atomically, keeping the other keys."""
+    root = library_dir()
+    root.mkdir(parents=True, exist_ok=True)
+    data = _appearance() | {key: value}
+    with atomic_path(root / 'appearance.json') as temporary:
+        temporary.write_text(json.dumps(data), encoding='utf-8')
+
+
+def load_theme_name() -> str | None:
+    """Return the saved theme name string, or None if missing or unreadable."""
+    theme = _appearance().get('theme')
+    return theme if isinstance(theme, str) else None
 
 
 def save_theme_name(theme: str) -> None:
-    """Persist the theme name atomically."""
-    root = library_dir()
-    root.mkdir(parents=True, exist_ok=True)
-    with atomic_path(root / 'appearance.json') as temporary:
-        temporary.write_text(json.dumps({'theme': theme}), encoding='utf-8')
+    """Persist the theme name atomically, keeping the other preferences."""
+    _save_appearance('theme', theme)
+
+
+def load_export_dir() -> Path | None:
+    """Return the last export folder if it was saved and still exists, else None."""
+    folder = _appearance().get('export_dir')
+    if not isinstance(folder, str) or not folder:
+        return None
+    path = Path(folder)
+    return path if path.is_dir() else None
+
+
+def save_export_dir(folder: str | Path) -> None:
+    """Persist the folder of the last export, keeping the other preferences."""
+    _save_appearance('export_dir', str(folder))
+
+
+def load_surround_name() -> str | None:
+    """Return the saved viewer backdrop name string, or None if missing or unreadable."""
+    surround = _appearance().get('surround')
+    return surround if isinstance(surround, str) else None
+
+
+def save_surround_name(surround: str) -> None:
+    """Persist the viewer backdrop name atomically, keeping the other preferences."""
+    _save_appearance('surround', surround)

@@ -1,6 +1,24 @@
-"""Original vector illustration for catalog cards; no product photos/logos."""
+"""Original vector illustration for catalog cards; generic, no product photos/logos/brand marks."""
+from zlib import crc32
+
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
+
+BRANDS = ('kodak', 'ilford', 'fujifilm', 'fuji', 'darktable')   # never drawn on the badge
+MONO = ('hp5', 'acros', 'mono', 'b&w', 'neopan', 'tri-x')
+PALETTE = (('#c98f5b', '#202124'), ('#6f8fb3', '#ffffff'), ('#8a9a5b', '#202124'),
+           ('#b5655c', '#ffffff'), ('#7d6fa8', '#ffffff'), ('#538466', '#ffffff'))
+
+
+def badge_style(label):
+    """(background, ink, name words) for a generic badge: no brand names or brand colours."""
+    words = [w for w in label.replace('Kodachrome', 'Koda chrome').split()
+             if w.lower() not in BRANDS]
+    name = ' '.join(words).lower()
+    if any(key in name for key in MONO):
+        return '#e4e4e0', '#202124', words
+    color, ink = PALETTE[crc32(name.encode()) % len(PALETTE)]  # stable per film
+    return color, ink, words
 
 
 def add_canister(pixmap, label):
@@ -26,21 +44,13 @@ def add_canister(pixmap, label):
     painter.drawRoundedRect(QRectF(20,1,20,14),3,3)
     painter.setPen(QPen(QColor('#939598'),1))
     painter.drawLine(8,18,51,18)
-    if label.startswith('Kodak'):
-        color,ink,brand = '#f3c739','#202124','KODAK'
-        words = label.replace('Kodak ','').replace('Kodachrome','KODA CHROME').split()
-    elif label.startswith('Ilford'):
-        color,ink,brand = '#eeeae0','#202124','ILFORD'
-        words=label.replace('Ilford ','').split()
-    else:
-        color,ink,brand = '#538466','#ffffff','LOOK'
-        words=label.replace('darktable','').split()
+    color, ink, words = badge_style(label)
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(QColor(color))
     painter.drawRoundedRect(QRectF(4,27,52,68),3,3)
     painter.setPen(QColor(ink))
     painter.setFont(QFont('',8,QFont.Weight.Bold))
-    painter.drawText(QRectF(6,30,48,15),Qt.AlignmentFlag.AlignCenter,brand)
+    painter.drawText(QRectF(6,30,48,15),Qt.AlignmentFlag.AlignCenter,'35 mm')
     painter.setFont(QFont('',7,QFont.Weight.Bold))
     name='\n'.join(words[:4])
     painter.drawText(QRectF(6,47,48,44),Qt.AlignmentFlag.AlignCenter|Qt.TextFlag.TextWordWrap,name)
