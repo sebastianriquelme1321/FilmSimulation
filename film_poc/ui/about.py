@@ -35,6 +35,7 @@ class AboutDialog(QDialog):
         body.setOpenExternalLinks(True)
         layout.addWidget(body)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.button(QDialogButtonBox.StandardButton.Close).setText('Cerrar')
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
         self.body = body
