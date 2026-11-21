@@ -18,9 +18,11 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QSplitter,
     QVBoxLayout,
+    QWidget,
 )
 
 from ..core import raw
@@ -44,6 +46,8 @@ from .viewer import CompareView
 ALL_ORIGINS = 'Todos los orígenes'
 HINT = 'Un poco de nostalgia, en cada foto.'
 
+COLOR_KEYS = ('contrast', 'saturation', 'tint')
+
 
 class Window(QMainWindow):
     """The FilmSimulation app window."""
@@ -64,6 +68,7 @@ class Window(QMainWindow):
         self.pixmaps = []
         self.gallery_job = None
         self.busy = False
+        self.render_when_idle = False
         self.active_look = None
         self.preview_pipeline = PreviewPipeline()
         self.preview_job = None
@@ -253,16 +258,30 @@ class Window(QMainWindow):
         heading = QLabel('Ajustes')
         heading.setObjectName('sectionTitle')
         column.addWidget(heading)
+        content = QWidget()
+        content.setObjectName('inspectorContent')
+        body = QVBoxLayout(content)
+        body.setContentsMargins(0, 0, 6, 0)
+        body.setSpacing(10)
         self.adjustments = AdjustmentsPanel()
-        column.addWidget(self.adjustments)
-        column.addSpacing(8)
-        column.addWidget(QLabel('Grano'))
+        body.addWidget(self.adjustments)
+        body.addSpacing(8)
+        body.addWidget(QLabel('Grano'))
         self.grain = QComboBox()
         self.grain.addItems(GRAIN)
         self.grain.setAccessibleName('Intensidad del grano')
         self.grain.setToolTip('Textura monocromática aplicada al JPEG final')
-        column.addWidget(self.grain)
-        column.addStretch()
+        body.addWidget(self.grain)
+        body.addStretch()
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setStyleSheet('QScrollArea, QWidget#inspectorContent { background: transparent; }')
+        scroll.viewport().setAutoFillBackground(False)
+        scroll.setWidget(content)
+        column.addWidget(scroll, 1)
         inspector.setMinimumWidth(250)
         inspector.setMaximumWidth(330)
         return inspector
@@ -377,8 +396,9 @@ class Window(QMainWindow):
         self.viewer.set_after_label('CON PELÍCULA · ' + info['label'].upper())
         if LOOKS[name].backend == 'recipe':
             _, values = edit_settings(name)
-            self.adjustments.set_values(values['exposure_ev'], values['temperature'],
-                                        values['intensity'])
+            self.adjustments.set_values(
+                values['exposure_ev'], values['temperature'], values['intensity'],
+                values.get('contrast', 0), values.get('saturation', 0), values.get('tint', 0))
             self.grain.blockSignals(True)
             self.grain.setCurrentText(LOOKS[name].params['recipe'].get('grain', 'Desactivado'))
             self.grain.blockSignals(False)
@@ -427,6 +447,7 @@ class Window(QMainWindow):
                     'strength': values['intensity'], 'exposure_ev': values['exposure_ev'],
                     'temperature': values['temperature'], 'grain': self.grain.currentText(),
                     'input_space': 'sRGB'}
+            data.update({key: values[key] for key in COLOR_KEYS if values[key]})
             try:
                 library.save_recipe(data, path)
                 self.status.setText('Receta guardada. Puedes compartir el JSON o añadirlo '
@@ -452,7 +473,7 @@ class Window(QMainWindow):
         self.progress.setVisible(busy)
         self.save_button.setEnabled(not busy and self.linear is not None
                                     and bool(self.active_look))
-        if was_busy and not busy:
+        if was_busy and not busy and self.render_when_idle:
             self.render()
 
     def run_job(self, operation, callback, message):
@@ -524,17 +545,31 @@ class Window(QMainWindow):
 
     # ---- preview ------------------------------------------------------------------------
 
+    def _engine_values(self):
+        """Adjustment kwargs for the engine, omitting contrast/saturation/tint when all are 0.
+
+        Neutral colour sliders are dropped so untouched edits call the engine exactly as before;
+        any non-zero value sends all three keys (the engine accepts them as keyword arguments).
+        """
+        values = self.adjustments.values()
+        if not any(values[key] for key in COLOR_KEYS):
+            for key in COLOR_KEYS:
+                del values[key]
+        return values
+
     def render(self, *_):
         """Queue a preview render; only the newest request is kept."""
         self.render_timer.stop()
         if self.busy:
+            self.render_when_idle = True
             return
+        self.render_when_idle = False
         self.preview_revision += 1
         if self.preview is None:
             self.preview_pending = None
             return
         self.preview_pending = (self.preview_revision, self.preview, self.active_look,
-                                self.adjustments.values(), self.grain.currentText(),
+                                self._engine_values(), self.grain.currentText(),
                                 self.preview_step)
         if self.preview_job is None:
             self.start_preview()
@@ -608,7 +643,7 @@ class Window(QMainWindow):
             if not destination.suffix:
                 destination = destination.with_suffix(suffix)
             name = self.active_look
-            values = self.adjustments.values()
+            values = self._engine_values()
             if raw:
                 def operation():
                     return export_raw_bundle(self.source, name, destination, grain=grain, **values)

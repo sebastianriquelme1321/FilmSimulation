@@ -87,7 +87,8 @@ def test_edit_controls_and_raw_export_route(tmp_path,monkeypatch,wait_window):
         assert recipe['strength']==.4 and recipe['exposure_ev']==.8
         assert recipe['temperature']==25
     window.adjustments.reset()
-    assert window.adjustments.values()=={'exposure_ev':0,'temperature':0,'intensity':1}
+    assert window.adjustments.values()=={'exposure_ev':0,'temperature':0,'intensity':1,
+        'contrast':0,'saturation':0,'tint':0}
     assert window.adjustments.exposure_slider.value()==0
     window.render_timer.stop()
     wait_window(window)

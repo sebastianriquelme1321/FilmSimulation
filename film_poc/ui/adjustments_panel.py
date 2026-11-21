@@ -1,4 +1,4 @@
-"""Exposure, temperature and look-intensity controls with one `changed` signal."""
+"""Exposure, temperature, intensity and colour controls with one `changed` signal."""
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QDoubleSpinBox,
@@ -64,16 +64,41 @@ class AdjustmentsPanel(QWidget):
         controls.addWidget(self.intensity)
         controls.addSpacing(8)
 
+        section = QLabel('Color')
+        section.setObjectName('muted')
+        controls.addWidget(section)
+        self.contrast, self.contrast_label = self._signed_slider(
+            controls, 'Contraste', 'Contraste: plano a marcado',
+            'Aplana o endurece el contraste alrededor del gris medio.')
+        self.saturation, self.saturation_label = self._signed_slider(
+            controls, 'Saturación', 'Saturación: apagado a intenso',
+            'Apaga o intensifica los colores.')
+        self.tint, self.tint_label = self._signed_slider(
+            controls, 'Tinte', 'Tinte: verde a magenta', 'Verde ← → magenta')
+        controls.addSpacing(2)
+
         self.reset_button = QPushButton('Restablecer ajustes')
         self.reset_button.setToolTip(
-            'Restablece exposición, temperatura e intensidad; mantiene la película y el grano.')
+            'Restablece todos los ajustes; mantiene la película y el grano.')
         controls.addWidget(self.reset_button)
 
-        for control in (self.exposure, self.temperature, self.intensity):
+        for control in (self.exposure, self.temperature, self.intensity, self.contrast,
+                        self.saturation, self.tint):
             control.valueChanged.connect(self._changed)
         self.exposure_slider.valueChanged.connect(lambda value: self.exposure.setValue(value / 100))
         self.reset_button.clicked.connect(self.reset)
         self._sync()
+
+    def _signed_slider(self, layout, name, accessible, tooltip):
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setRange(-100, 100)
+        slider.setAccessibleName(accessible)
+        slider.setToolTip(tooltip)
+        label = QLabel('+0')
+        label.setObjectName('value')
+        layout.addLayout(self._row(name, label))
+        layout.addWidget(slider)
+        return slider, label
 
     @staticmethod
     def _row(name, value_widget):
@@ -87,18 +112,21 @@ class AdjustmentsPanel(QWidget):
     def values(self):
         """Current settings as engine keyword arguments."""
         return {'exposure_ev': self.exposure.value(), 'temperature': self.temperature.value(),
-                'intensity': self.intensity.value() / 100}
+                'intensity': self.intensity.value() / 100, 'contrast': self.contrast.value(),
+                'saturation': self.saturation.value(), 'tint': self.tint.value()}
 
     def reset(self):
-        """Back to neutral: 0 EV, 0 temperature, full look intensity."""
+        """Back to neutral: 0 EV, no colour changes, full look intensity."""
         self.exposure.setValue(0)
-        self.temperature.setValue(0)
+        for slider in (self.temperature, self.contrast, self.saturation, self.tint):
+            slider.setValue(0)
         self.intensity.setValue(100)
 
-    def set_values(self, exposure_ev, temperature, intensity):
+    def set_values(self, exposure_ev, temperature, intensity, contrast=0, saturation=0, tint=0):
         """Load settings (intensity as a 0-1 fraction) without emitting `changed`."""
         controls = ((self.exposure, exposure_ev), (self.temperature, int(temperature)),
-                    (self.intensity, round(intensity * 100)))
+                    (self.intensity, round(intensity * 100)), (self.contrast, int(contrast)),
+                    (self.saturation, int(saturation)), (self.tint, int(tint)))
         for control, value in controls:
             control.blockSignals(True)
             control.setValue(value)
@@ -108,7 +136,8 @@ class AdjustmentsPanel(QWidget):
     def set_editable(self, editable):
         """Enable or disable every control (the labels stay as they are)."""
         for control in (self.exposure, self.exposure_slider, self.temperature,
-                        self.intensity, self.reset_button):
+                        self.intensity, self.contrast, self.saturation, self.tint,
+                        self.reset_button):
             control.setEnabled(editable)
 
     def _sync(self):
@@ -117,6 +146,10 @@ class AdjustmentsPanel(QWidget):
         self.exposure_slider.blockSignals(False)
         self.temperature_label.setText(f'{self.temperature.value():+d}')
         self.intensity_label.setText(f'{self.intensity.value()} %')
+        for slider, label in ((self.contrast, self.contrast_label),
+                              (self.saturation, self.saturation_label),
+                              (self.tint, self.tint_label)):
+            label.setText(f'{slider.value():+d}')
 
     def _changed(self, *_):
         self._sync()
