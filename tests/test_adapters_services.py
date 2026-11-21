@@ -43,11 +43,11 @@ def test_load_decoders_is_idempotent_and_finds_arw():
 
 def test_decoder_for_is_case_insensitive_and_message_uses_labels(fake_decoder):
     adapters.load_decoders()
-    assert raw.decoder_for(Path('photo.ARW')).label == 'Sony .ARW'
+    assert raw.decoder_for(Path('photo.ARW')).label == 'RAW'
     assert raw.is_supported(Path('x.Arw'))
     with pytest.raises(ValueError) as error:
         raw.decoder_for(Path('photo.xyz'))
-    assert 'Sony .ARW / Fake .FAKERAW' in str(error.value)
+    assert 'RAW / Fake .FAKERAW' in str(error.value)
 
 
 def test_fake_decoder_is_routed_through_develop(fake_decoder):
@@ -57,12 +57,15 @@ def test_fake_decoder_is_routed_through_develop(fake_decoder):
 
 
 def test_open_filter_follows_registered_decoders(fake_decoder):
-    assert develop.open_filter() == 'Sony .ARW / Fake .FAKERAW (*.arw *.ARW *.fakeraw *.FAKERAW)'
-    assert develop.supported_labels() == 'Sony .ARW / Fake .FAKERAW'
+    flt = develop.open_filter()
+    assert flt.startswith('RAW / Fake .FAKERAW (*.arw *.ARW ') and '*.cr3 *.CR3' in flt
+    assert flt.endswith('*.fakeraw *.FAKERAW)')
+    assert develop.supported_labels() == 'RAW / Fake .FAKERAW'
 
 
 def test_open_filter_with_only_arw():
-    assert develop.open_filter() == 'Sony .ARW (*.arw *.ARW)'
+    flt = develop.open_filter()
+    assert flt.startswith('RAW (*.arw *.ARW ') and '*.nef *.NEF' in flt
 
 
 def test_fake_decoder_is_cleaned_up():

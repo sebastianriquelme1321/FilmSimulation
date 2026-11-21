@@ -52,7 +52,12 @@ de funciones) y compara con la tabla `FORBIDDEN`. `core` tampoco puede importar 
 - `film_poc/adapters/<nombre>_decoder.py`: clase con `extensions` (minúsculas, con punto), `label`
   y `decode(path) -> (linear, reference)`, y `register_decoder(MiDecoder())` (de `core.raw`).
   Se importa solo: `adapters.load_decoders()` carga todo módulo `*_decoder`. Modelo:
-  `adapters/rawpy_decoder.py`.
+  `adapters/rawpy_decoder.py`. `decode` puede devolver `reference=None` si no hay previsualización
+  (se omite el ajuste de tono) y debe lanzar `ValueError` con mensaje en español si falla.
+- Hoy un único decodificador LibRaw (`rawpy_decoder.py`) cubre `.arw .srf .sr2 .cr2 .cr3 .crw .nef
+  .nrw .raf .rw2 .orf .pef .dng .srw .3fr .iiq .erf .mrw .kdc .dcr .raw`. Solo Sony ARW está
+  verificado con archivos reales; el resto es EXPERIMENTAL y sin probar. Los modelos no
+  compatibles se pueden reportar (Ayuda > Enviar feedback).
 - El filtro del diálogo de apertura (`services/develop.py::open_filter`) y el texto de bienvenida
   se derivan de los decodificadores registrados. Pendiente a mano: los textos «Sony ARW» de
   `ui/window.py` y `services/export_bundle.py` aún asumen ARW.

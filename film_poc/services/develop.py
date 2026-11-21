@@ -10,15 +10,18 @@ from .library import install
 
 
 def decode(path: Path) -> np.ndarray:
-    """Oriented HxWx3 float32 linear sRGB, [0,1], tone-matched to the embedded preview."""
+    """Oriented HxWx3 float32 linear sRGB, [0,1], tone-matched to the embedded preview
+    when there is one (otherwise returned as decoded)."""
     install()
     adapters.load_decoders()
     linear, reference = raw.decoder_for(path).decode(path)
+    if reference is None:
+        return np.clip(linear, 0.0, 1.0).astype(np.float32, copy=False)
     return match_camera_tone(linear, reference)
 
 
 def supported_labels() -> str:
-    """Labels of the registered RAW formats, e.g. 'Sony .ARW'."""
+    """Labels of the registered RAW formats, e.g. 'RAW'."""
     adapters.load_decoders()
     return raw.supported_labels()
 

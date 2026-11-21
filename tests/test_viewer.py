@@ -113,7 +113,7 @@ def test_photo_meta_uses_the_decoder_label(tmp_path, wait_window):
     window.show()
     app.processEvents()
     window.loaded(tmp_path/'a.arw', np.full((40, 60, 3), .2, np.float32))
-    assert '60 × 40' in window.photo_meta.text() and '.ARW' in window.photo_meta.text()
+    assert '60 × 40' in window.photo_meta.text() and window.photo_meta.text().endswith('RAW')
     window.loaded(tmp_path/'a.unknown', np.full((40, 60, 3), .2, np.float32))
     assert window.photo_meta.text().endswith('RAW')
     wait_window(window)

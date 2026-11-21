@@ -17,7 +17,7 @@ Aplicación de escritorio experimental para revelar RAW Sony y aplicar aproximac
 - Biblioteca local de LUT `.cube`, HaldCLUT y recetas JSON.
 - Exportación de JPEG procesado o de un ZIP con el RAW original y los ajustes.
 - Dos temas: **Taller neutro** (predeterminado) y **Vidrio y luz**.
-- Decodificadores RAW enchufables (hoy solo Sony ARW).
+- Decodificación RAW basada en LibRaw para muchas marcas (Sony ARW verificado; el resto experimental) y decodificadores enchufables.
 
 ## Instalar y ejecutar
 
@@ -88,7 +88,7 @@ Cada sistema (y, en macOS, cada arquitectura) debe compilarse en su propio equip
 ## Limitaciones conocidas
 
 - El zoom del visor opera sobre una vista previa de hasta 1280 px; “100 %” no equivale a los píxeles del RAW.
-- Solo hay decodificador para Sony ARW; otros formatos requieren añadir un decodificador (ver [CONTRIBUTING.md](CONTRIBUTING.md)).
+- Solo Sony ARW se ha verificado con archivos reales. Las demás extensiones RAW (Canon, Nikon, Fujifilm, Panasonic, Olympus, Pentax, DNG, etc.) se decodifican con LibRaw y son **experimentales**, sin probar; si tu modelo no abre, reporta la cámara desde Ayuda > Enviar feedback. Si el RAW no trae previsualización incrustada, se revela sin igualar el tono de la cámara. Más detalle en [CONTRIBUTING.md](CONTRIBUTING.md).
 - Las aplicaciones empaquetadas no están firmadas ni notarizadas por Apple ni Microsoft: macOS (Gatekeeper) y Windows (SmartScreen) mostrarán un aviso la primera vez; ver [packaging/README.md](packaging/README.md).
 - La compatibilidad en macOS debe confirmarse con pruebas reales; las LUT esperan entrada sRGB.
 - Las simulaciones son aproximaciones, sin equivalencia garantizada con cámaras o película reales.

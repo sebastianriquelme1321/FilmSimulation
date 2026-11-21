@@ -2,7 +2,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import rawpy
 from PIL import Image
 
 from film_poc.core.looks.base import display_rgb
@@ -42,5 +41,5 @@ def test_jpeg_full_size_and_icc(tmp_path):
 def test_invalid_input():
     with pytest.raises(ValueError):
         decode(Path('sample.dng'))
-    with pytest.raises(rawpy.LibRawIOError):
+    with pytest.raises(ValueError, match='missing.arw'):
         decode(Path('missing.arw'))
