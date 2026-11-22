@@ -1,8 +1,8 @@
 ## FilmSimulation (beta)
 
-App de escritorio **gratuita y de código abierto** (GPL-3.0) para revelar fotos RAW y aplicar simulaciones
-de película. Todo corre en tu equipo: sin cuentas, sin nube y sin telemetría.
-*Free, open-source desktop app to develop RAW photos and apply film simulations. Everything runs locally.*
+App de escritorio **gratuita y de código abierto** (GPL-3.0) para revelar fotos RAW y editar fotos normales
+(JPEG, PNG, TIFF) con simulaciones de película. Todo corre en tu equipo: sin cuentas, sin nube y sin telemetría.
+*Free, open-source desktop app to develop RAW photos and edit ordinary photos (JPEG, PNG, TIFF) with film simulations. Everything runs locally.*
 
 ### Descargas / Downloads
 | Sistema | Archivo |
@@ -20,6 +20,7 @@ de película. Todo corre en tu equipo: sin cuentas, sin nube y sin telemetría.
 
 ### Estado de esta beta / Beta status
 - Verificado con fotos reales: **Sony ARW** en macOS.
+- **Fotos normales (JPEG, PNG, TIFF)**: nuevas en esta versión. Se convierten a sRGB según su perfil ICC y conservan el EXIF al exportar. Probado con JPEG en macOS.
 - Otros formatos RAW (Canon, Nikon, Fuji, Panasonic, Olympus, Pentax, DNG…): **experimentales, sin probar**.
 - **Windows**: compila y pasa los tests automáticos, pero aún no se ha probado manualmente.
 - Los looks son **aproximaciones**; no equivalen a los procesos originales de cada película.
