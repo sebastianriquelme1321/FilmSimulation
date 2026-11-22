@@ -1,4 +1,4 @@
-"""Use case: non-destructive archive with the untouched original RAW plus the edit settings."""
+"""Use case: non-destructive archive with the untouched original (RAW or photo) + the edit."""
 import hashlib
 import json
 import zipfile
@@ -16,14 +16,14 @@ from .library import install
 
 def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
                       grain: str = 'Desactivado', **adjustments: float) -> None:
-    """Write a .zip with the untouched RAW, edit.recipe.json and export metadata."""
+    """Write a .zip with the untouched original (RAW or photo), edit.recipe.json and metadata."""
     source, destination = Path(source), Path(destination)
     install()
     adapters.load_decoders()
     if not raw.is_supported(source) or not source.is_file():
-        raise ValueError(f'Selecciona un archivo {raw.supported_labels()} original existente.')
+        raise ValueError(f'Selecciona un archivo ({raw.supported_labels()}) original existente.')
     if destination.suffix.lower() != '.zip':
-        raise ValueError('RAW original + ajustes se guarda como archivo .zip.')
+        raise ValueError('Original + ajustes se guarda como archivo .zip.')
     if grain not in GRAIN:
         raise ValueError('Grano no compatible.')
     base, settings = edit_settings(name, **adjustments)
@@ -53,12 +53,16 @@ def export_raw_bundle(source: str | Path, name: str, destination: str | Path,
                 'format': 'FilmSimulation original RAW archive', 'version': 1,
                 'pipeline': PIPELINE_VERSION, 'original_sha256': digest.hexdigest(),
                 'original_file': 'original/' + source.name,
-                'raw_modified': False, 'temperature_unit': 'relative RGB correction, not Kelvin',
+                'raw_modified': False, 'original_modified': False,
+                'temperature_unit': 'relative RGB correction, not Kelvin',
                 'input_space': 'sRGB'}, indent=2))
+            kind = 'RAW' if raw.format_label(source) == 'RAW' else 'archivo de imagen'
             archive.writestr('LEEME.txt',
-                'El ARW es una copia intacta del original, con sus metadatos originales.\n'
-                'La simulación NO está incorporada en los datos RAW.\n'
-                'Importa el ARW y edit.recipe.json en FilmSimulation para recuperar los ajustes.\n'
+                f'«{source.name}» es una copia intacta del original, con sus metadatos '
+                'originales.\n'
+                f'La simulación NO está incorporada en el {kind}.\n'
+                f'Importa «{source.name}» y edit.recipe.json en FilmSimulation para recuperar '
+                'los ajustes.\n'
                 'Si hay una carpeta library, copia su contenido en la biblioteca local de '
                 'FilmSimulation y reinicia.\n'
                 'Otros reveladores no interpretan automáticamente esta receta.\n')

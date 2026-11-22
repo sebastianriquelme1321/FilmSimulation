@@ -2,7 +2,7 @@
 
 [English](README.md) · **Español**
 
-Aplicación de escritorio gratuita y de código abierto para revelar fotos RAW y aplicar aproximaciones de película. Todo corre en tu equipo: sin cuentas, sin nube y sin telemetría. Incluye 31 looks, filtros por origen, un visor con zoom y comparación antes/después, ajustes de exposición, color y grano, y exportación JPEG sRGB. Los nombres comerciales identifican el look buscado; no son perfiles oficiales.
+Aplicación de escritorio gratuita y de código abierto para revelar fotos RAW, editar fotos corrientes (JPEG, PNG, TIFF) y aplicar aproximaciones de película. Todo corre en tu equipo: sin cuentas, sin nube y sin telemetría. Incluye 31 looks, filtros por origen, un visor con zoom y comparación antes/después, ajustes de exposición, color y grano, y exportación JPEG sRGB. Los nombres comerciales identifican el look buscado; no son perfiles oficiales.
 
 ![Tema Taller neutro](docs/images/workshop.png)
 
@@ -13,13 +13,13 @@ Aplicación de escritorio gratuita y de código abierto para revelar fotos RAW y
 ## Funciones
 
 - Tres columnas: películas (looks) a la izquierda, visor en el centro y ajustes a la derecha.
-- Importar un RAW con el botón **Importar RAW** o arrastrándolo sobre la ventana.
+- Importar una foto (RAW, JPEG, PNG o TIFF) con el botón **Importar foto** o arrastrándola sobre la ventana.
 - Visor con zoom, desplazamiento y divisor antes/después arrastrable.
 - Ajustes previos al look: exposición, temperatura, contraste, saturación y tinte; intensidad del look y grano.
 - Biblioteca local de LUT `.cube`, HaldCLUT y recetas JSON.
-- Exportación de JPEG procesado o de un ZIP con el RAW original y los ajustes.
+- Exportación de JPEG procesado (conserva el EXIF si el origen lo tiene) o de un ZIP con el archivo original intacto y los ajustes.
 - Dos temas: **Taller neutro** (predeterminado) y **Vidrio y luz**.
-- Decodificación RAW basada en LibRaw para muchas marcas (Sony ARW verificado; el resto experimental) y decodificadores enchufables.
+- Decodificación RAW basada en LibRaw para muchas marcas (Sony ARW verificado; el resto experimental) y decodificación de fotos JPEG, PNG y TIFF con Pillow, con decodificadores enchufables.
 
 ## Descargar
 
@@ -41,7 +41,7 @@ macOS necesita versión 14 o posterior. Intel usa rawpy 0.25.1 y Apple Silicon 0
 
 ## Uso
 
-1. Importa un RAW (botón **Importar RAW** o arrastrar y soltar un `.ARW` sobre la ventana).
+1. Importa una foto: un RAW o un JPEG/PNG/TIFF corriente (botón **Importar foto** o arrastrar y soltar un archivo sobre la ventana).
 2. Elige una película en la columna izquierda: clic en la tarjeta o Enter. Recorrer con las flechas no la aplica.
 3. Ajusta exposición, temperatura, contraste, saturación, tinte, intensidad y grano en la columna derecha. **Restablecer ajustes** vuelve todo a neutro (mantiene película y grano).
 4. Exporta con el selector y el botón **Exportar**. El diálogo propone la carpeta de la última exportación (o, la primera vez, la de la foto) y puedes elegir otra; la elección se recuerda.
@@ -60,7 +60,7 @@ macOS necesita versión 14 o posterior. Intel usa rawpy 0.25.1 y Apple Silicon 0
 
 El visor necesita el foco (haz clic sobre él) para recibir las teclas. En el control de exposición, las flechas cambian 0,1 EV y RePág/AvPág 0,5 EV; también se puede escribir un valor exacto.
 
-**Importante:** el visor trabaja sobre una vista previa de hasta 1280 px de lado largo, así que “100 %” se refiere a esa vista previa y no a los píxeles del RAW. La exportación sí usa la resolución completa.
+**Importante:** el visor trabaja sobre una vista previa de hasta 1280 px de lado largo, así que “100 %” se refiere a esa vista previa y no a los píxeles de la foto. La exportación sí usa la resolución completa.
 
 ## Biblioteca local
 
@@ -101,11 +101,19 @@ Cada sistema (y, en macOS, cada arquitectura) debe compilarse en su propio equip
 
 ## Limitaciones conocidas
 
-- El zoom del visor opera sobre una vista previa de hasta 1280 px; “100 %” no equivale a los píxeles del RAW.
+- El zoom del visor opera sobre una vista previa de hasta 1280 px; “100 %” no equivale a los píxeles de la foto.
 - Solo Sony ARW se ha verificado con archivos reales. Las demás extensiones RAW (Canon, Nikon, Fujifilm, Panasonic, Olympus, Pentax, DNG, etc.) se decodifican con LibRaw y son **experimentales**, sin probar; si tu modelo no abre, reporta la cámara desde Ayuda > Enviar feedback. Si el RAW no trae previsualización incrustada, se revela sin igualar el tono de la cámara. Más detalle en [CONTRIBUTING.md](CONTRIBUTING.md).
 - Las aplicaciones empaquetadas no están firmadas ni notarizadas por Apple ni Microsoft: macOS (Gatekeeper) y Windows (SmartScreen) mostrarán un aviso la primera vez; ver [packaging/README.md](packaging/README.md).
 - La compatibilidad en macOS debe confirmarse con pruebas reales; las LUT esperan entrada sRGB.
 - Las simulaciones son aproximaciones, sin equivalencia garantizada con cámaras o película reales.
+
+**Fotos corrientes (JPEG, PNG, TIFF).** Se leen con Pillow, se orientan según su etiqueta EXIF y se linealizan desde sRGB. Límites:
+
+- Las fuentes son de 8 bits: un JPEG ya trae el tono aplicado y las altas luces recortadas, así que no hay recuperación de altas luces ni ajuste de tono con la cámara (eso solo existe para RAW). Pillow no admite RGB de 16 bits, por lo que los PNG/TIFF RGB de 16 bits se leen a 8 bits; solo el gris de 16 bits conserva su precisión.
+- Un perfil ICC incrustado distinto de sRGB (Display P3, Adobe RGB...) se convierte a sRGB; si no se puede leer se ignora con un aviso y se trata como sRGB. La exportación siempre incrusta sRGB.
+- JPEG a JPEG recomprime la imagen (calidad 95, 4:4:4), por lo que hay una pequeña pérdida generacional inevitable; la exportación **Original + ajustes (.zip)** conserva el original intacto.
+- La transparencia (alfa de PNG) se descarta: la imagen se compone sobre blanco. Los archivos en gris, paleta y CMYK se convierten a RGB.
+- El bloque EXIF (cámara, objetivo, fecha, exposición) se copia al JPEG exportado con la orientación en 1 y sin la miniatura incrustada ni las notas del fabricante. No se admiten otros formatos (HEIC, WebP, BMP...). Se rechazan imágenes de más de unos 200 megapíxeles.
 
 El revelado usa rawpy/LibRaw y toma la miniatura de cámara como guía tonal cuando está disponible. Las simulaciones son aproximaciones y dependen del revelado y la escena. La exportación conserva resolución y añade un perfil ICC sRGB. No hay calibración colorimétrica ni equivalencia garantizada con cámaras Fujifilm o película analógica.
 
@@ -135,7 +143,7 @@ Las únicas imágenes incluidas son tablas técnicas LUT necesarias para el proc
 
 La exposición (−3 a +3 EV), la temperatura relativa y el tinte, el contraste y la saturación (−100 a 100, neutro en 0) se aplican en RGB lineal antes de codificar sRGB y aplicar el look. La temperatura es una corrección frío/cálido sobre el balance de cámara, no un ajuste de sensor calibrado en Kelvin; el tinte desplaza entre verde y magenta; el contraste actúa alrededor del gris medio. La intensidad mezcla la base ajustada y la simulación en sRGB; el grano se aplica después. La vista previa y la exportación usan el mismo proceso. Estos ajustes no recuperan información que el revelado inicial ya haya recortado.
 
-El selector de exportación ofrece **JPEG procesado** o **RAW original + ajustes (.zip)**. El ZIP conserva el ARW byte por byte con sus metadatos originales, una receta JSON, un checksum SHA-256 y la LUT local cuando corresponde. No modifica el mosaico del sensor ni incorpora el look en el ARW. Para restaurar: extraer el archivo, importar el ARW y añadir `edit.recipe.json` a la biblioteca. Si incluye `library/`, copiar su contenido a la biblioteca local y reiniciar antes de importar la receta. Otros editores no interpretan automáticamente este formato. No se exporta DNG procesado.
+El selector de exportación ofrece **JPEG procesado** o **RAW original + ajustes (.zip)** (con un origen JPEG/PNG/TIFF se llama **Original + ajustes (.zip)**). El ZIP conserva el archivo original (ARW, JPEG...) byte por byte con sus metadatos originales, una receta JSON, un checksum SHA-256 y la LUT local cuando corresponde. No modifica el mosaico del sensor ni incorpora el look en el archivo original. Para restaurar: extraer el archivo, importar el original y añadir `edit.recipe.json` a la biblioteca. Si incluye `library/`, copiar su contenido a la biblioteca local y reiniciar antes de importar la receta. Otros editores no interpretan automáticamente este formato. No se exporta DNG procesado.
 
 Los perfiles incluidos y las LUT importadas trabajan con entrada sRGB. No hay conversión automática de Rec.709, S-Log u otras curvas Log; un selector de gamma por sí solo no corrige primarias, gamut ni la exposición de referencia de una LUT.
 

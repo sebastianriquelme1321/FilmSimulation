@@ -25,8 +25,9 @@ def load_decoders() -> None:
 
 def _import_decoders() -> None:
     # The explicit name is a fallback for frozen apps, where iter_modules may find nothing.
+    # RAW loads first so it leads in the labels and filters.
     names = {m.name for m in pkgutil.iter_modules(__path__) if m.name.endswith('_decoder')}
-    for name in sorted(names | {'rawpy_decoder'}):
+    for name in sorted(names | {'rawpy_decoder'}, key=lambda n: (n != 'rawpy_decoder', n)):
         try:
             importlib.import_module(f'{__name__}.{name}')
         except ImportError as exc:

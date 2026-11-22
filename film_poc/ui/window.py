@@ -44,6 +44,7 @@ from ..services.diagnostics import (
 )
 from ..services.export_bundle import export_raw_bundle
 from ..services.export_jpeg import export_jpeg
+from ..services.metadata import read_exif
 from ..services.preferences import (
     load_export_dir,
     load_surround,
@@ -140,14 +141,15 @@ class Window(QMainWindow):
         identity.addWidget(self.brand)
         header.addLayout(identity)
         header.addStretch()
-        self.open_button = QPushButton('Importar RAW')
+        self.open_button = QPushButton('Importar foto')
         self.open_button.setMinimumHeight(42)
+        self.open_button.setToolTip('Importar una foto (RAW, JPEG, PNG o TIFF)')
+        self.open_button.setAccessibleName('Importar foto')
         self.save_button = QPushButton('Exportar')
         self.export_format = QComboBox()
         self.export_format.addItems(['JPEG procesado', 'RAW original + ajustes (.zip)'])
         self.export_format.setAccessibleName('Formato de exportación')
-        self.export_format.setToolTip('RAW: copia intacta del ARW y receta FilmSimulation; '
-                                      'no incorpora el look en los datos RAW.')
+        self._set_bundle_wording(True)
         self.save_button.setObjectName('primary')
         self.save_button.setToolTip(
             f'Exportar ({QKeySequence("Ctrl+E").toString(QKeySequence.SequenceFormat.NativeText)})')
@@ -218,14 +220,14 @@ class Window(QMainWindow):
         self.photo_title.setObjectName('sectionTitle')
         self.photo_title.setTextFormat(Qt.TextFormat.PlainText)
         self.photo_title.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-        self.photo_meta = QLabel('Importa un RAW para empezar a revelar.')
+        self.photo_meta = QLabel('Importa una foto para empezar a revelar.')
         self.photo_meta.setObjectName('muted')
         photo_info.addWidget(self.photo_title)
         photo_info.addWidget(self.photo_meta)
         workspace.addLayout(photo_info)
         self.viewer = CompareView()
-        self.viewer.set_placeholder(f'Tu imagen empieza aquí\n\nImporta o arrastra un archivo '
-                                    f'{supported_labels()}')
+        self.viewer.set_placeholder('Tu imagen empieza aquí\n\nImporta o arrastra una foto '
+                                    '(RAW, JPEG, PNG o TIFF)')
         workspace.addWidget(self.viewer, 1)
         workspace.addLayout(self._build_view_toolbar())
         return compare
@@ -576,27 +578,27 @@ class Window(QMainWindow):
         QMessageBox.warning(self, 'FilmSimulation', message)
 
     def open_raw(self):
-        """Ask for a RAW file and develop it."""
+        """Ask for a photo (RAW or image) and develop it."""
         if self.busy:
             return
-        path, _ = QFileDialog.getOpenFileName(self, 'Importar RAW', '', open_filter())
+        path, _ = QFileDialog.getOpenFileName(self, 'Importar foto', '', open_filter())
         if path:
             self.open_path(Path(path))
 
     def open_path(self, source):
-        """Develop a RAW file in the background and show it."""
+        """Develop a photo in the background and show it."""
         if self.busy:
             return
-        self.run_job(lambda: decode(source), lambda linear: self.loaded(source, linear),
-                     'Revelando RAW…')
+        message = 'Revelando RAW…' if self._format_label(source) == 'RAW' else 'Abriendo foto…'
+        self.run_job(lambda: decode(source), lambda linear: self.loaded(source, linear), message)
 
     def dragEnterEvent(self, event):
-        """Accept a dragged RAW file."""
+        """Accept a dragged photo."""
         if self._dropped_raw(event) is not None:
             event.acceptProposedAction()
 
     def dropEvent(self, event):
-        """Open a dropped RAW file."""
+        """Open a dropped photo."""
         path = self._dropped_raw(event)
         if path is not None:
             self.open_path(path)
@@ -616,20 +618,29 @@ class Window(QMainWindow):
         self.photo_title.setToolTip(source.name)
         self.photo_meta.setText(f'{linear.shape[1]} × {linear.shape[0]} · '
                                 f'{self._format_label(source)}')
+        self._set_bundle_wording(self._format_label(source) == 'RAW')
         self.preview_step = max(1, (max(linear.shape[:2]) + 1279) // 1280)
         self.preview = linear[::self.preview_step, ::self.preview_step].copy()
         self.refresh_gallery()
         self.render()
         self.status.setText(f'{source.name} · {linear.shape[1]} × {linear.shape[0]}')
-        log.info('RAW opened: %s, %d x %d, %s', source.name, linear.shape[1], linear.shape[0],
+        log.info('Photo opened: %s, %d x %d, %s', source.name, linear.shape[1], linear.shape[0],
                  self._format_label(source))
 
     @staticmethod
     def _format_label(source):
         try:
-            return raw.decoder_for(source).label
+            return raw.format_label(source)
         except ValueError:
             return 'RAW'
+
+    def _set_bundle_wording(self, is_raw):
+        """The ZIP export item names the original: RAW or ordinary photo."""
+        self.export_format.setItemText(
+            1, 'RAW original + ajustes (.zip)' if is_raw else 'Original + ajustes (.zip)')
+        self.export_format.setToolTip(
+            'Copia intacta del archivo original y receta FilmSimulation; no incorpora el look '
+            + ('en los datos RAW.' if is_raw else 'en el archivo original.'))
 
     # ---- preview ------------------------------------------------------------------------
 
@@ -720,12 +731,14 @@ class Window(QMainWindow):
         tag = look_slug(self.active_look)
         grain = self.grain.currentText()
         grain_tag = '' if grain == 'Desactivado' else '_grano_' + grain.lower()
-        raw = self.export_format.currentIndex() == 1
-        suffix = '.zip' if raw else '.jpg'
+        bundle = self.export_format.currentIndex() == 1
+        is_raw = self._format_label(self.source) == 'RAW'
+        suffix = '.zip' if bundle else '.jpg'
         folder = load_export_dir() or self.source.parent  # last export folder, if still there
         default = folder / (self.source.stem + f'_{tag}{grain_tag}' + suffix)
-        title = 'RAW original + ajustes (sin look incorporado)' if raw else 'Exportar JPEG'
-        formats = 'RAW original y receta (*.zip)' if raw else 'JPEG (*.jpg *.jpeg)'
+        original = 'RAW original' if is_raw else 'Original'
+        title = f'{original} + ajustes (sin look incorporado)' if bundle else 'Exportar JPEG'
+        formats = f'{original} y receta (*.zip)' if bundle else 'JPEG (*.jpg *.jpeg)'
         path, _ = QFileDialog.getSaveFileName(self, title, str(default), formats)
         if path:
             destination = Path(path)
@@ -733,13 +746,16 @@ class Window(QMainWindow):
                 destination = destination.with_suffix(suffix)
             name = self.active_look
             values = self._engine_values()
-            if raw:
+            if bundle:
                 def operation():
                     return export_raw_bundle(self.source, name, destination, grain=grain, **values)
-                message = 'Conservando RAW original y receta…'
+                message = f'Conservando {original.lower()} y receta…'
             else:
+                source = self.source
+
                 def operation():
-                    return export_jpeg(self.linear, name, destination, grain=grain, **values)
+                    return export_jpeg(self.linear, name, destination, grain=grain,
+                                       exif=read_exif(source), **values)
                 message = 'Exportando resolución completa…'
             def exported(_):
                 self.status.setText(f'Exportado: {destination}')
@@ -747,7 +763,8 @@ class Window(QMainWindow):
                     save_export_dir(destination.parent)
                 except OSError:
                     pass  # the preference is a convenience
-                log.info('Export done: %s (%s)', destination.name, 'RAW+receta' if raw else 'JPEG')
+                log.info('Export done: %s (%s)', destination.name,
+                         'original+receta' if bundle else 'JPEG')
             self.run_job(operation, exported, message)
 
     def closeEvent(self, event):
